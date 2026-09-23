@@ -14,3 +14,15 @@ doc/api/
 
 .flutter-plugins
 .flutter-plugins-dependencies
+
+# OS / IDE
+.DS_Store
+.idea/
+*.iml
+
+# Secrets
+*.jks
+*.keystore
+key.properties
+google-services.json
+GoogleService-Info.plist
