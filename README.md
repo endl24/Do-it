@@ -4,11 +4,12 @@
 ## 팀원 및 역할
 | 이름 | GitHub | UI·기능 | 백엔드·AI |
 | --- | --- | --- | --- |
-| 고은재 | [@eunjaego](https://github.com/eunjaego) | 할일관리 A1–A10 | **공통 데이터 모델·로컬 저장소 (A7)** |
-| 강두이 | [@endl24](https://github.com/endl24) | 이미지 등록 A14–A19, 알림 A27–A33 | 온디바이스 OCR, 알림 점수 로직 |
-| 김형철 | [@newuser1002-bot](https://github.com/newuser1002-bot) | 일정 A11–A13, 팀·계정 A34–A41 | **BaaS 연동·동기화 A20–A26**, 인증, 팀 공유 |
+| 고은재 | [@eunjaego](https://github.com/eunjaego) | 할일관리 A1–A11 | **공통 데이터 모델·로컬 저장소 (A7)** |
+| 강두이 | [@endl24](https://github.com/endl24) | 이미지 등록 A14–A19, 알림 A27–A33, **공용 위젯** | 온디바이스 OCR, 알림 점수·스케줄 계산, 알림 예약·취소 |
+| 김형철 | [@newuser1002-bot](https://github.com/newuser1002-bot) | 일정 A12–A13, 팀·계정 A34–A41 (설정 탭 포함) | **BaaS 연동·동기화 A20–A26**, 인증, 팀 공유 |
 
-> 공통 데이터 모델(A7)은 모두가 쓰는 기반이므로 가장 먼저 확정합니다. `lib/models/`를 수정할 때는 고은재와 먼저 상의해 주세요.
+> - 공통 데이터 모델(A7)은 모두가 쓰는 기반이므로 가장 먼저 확정합니다. `lib/models/`를 수정할 때는 고은재와 먼저 상의해 주세요.
+> - 여러 화면에서 쓰는 위젯(`lib/widgets/`)은 강두이가 관리합니다. 추가하거나 수정할 때는 강두이와 먼저 상의해 주세요.
 
 ## 실행
 ```bash
