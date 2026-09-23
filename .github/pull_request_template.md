@@ -10,4 +10,4 @@
 - [ ] `dart format .` 실행
 - [ ] `flutter analyze` 통과
 - [ ] `flutter test` 통과
-- [ ] 리뷰어 지정
+- [ ] (공용 파일 수정 시) 리뷰어 지정

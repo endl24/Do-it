@@ -4,10 +4,12 @@
 1. 이슈 생성 (템플릿 사용)
 2. `main`에서 브랜치 생성: `git switch -c feat/12-login main`
 3. 작업 후 커밋 & 푸시 → PR 생성 (본문에 `close #12`)
-4. CI 통과 + 팀원 1명 승인 후 **Squash and merge**
+4. CI 통과(초록 체크) 확인 후 본인이 **Squash and merge**
 5. 머지 후 로컬 `main` 최신화: `git switch main && git pull`
 
-`main`에 직접 push하지 않습니다.
+- 승인은 필수가 아니지만, 공용 파일(`app.dart`, `core/`, `models/`, `pubspec.yaml`)을 수정한 PR은 팀원에게 리뷰를 요청합니다.
+- CI가 실패한 PR은 머지하지 않습니다.
+- `main`에 직접 push하지 말고 PR로 올립니다.
 
 ## 브랜치 이름
 `타입/이슈번호-간단한-설명` 예) `feat/12-login`, `fix/20-list-crash`
