@@ -1,6 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
-
 import 'package:do_it/app.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets('앱 실행 시 홈 화면이 보인다', (tester) async {
