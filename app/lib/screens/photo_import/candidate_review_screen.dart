@@ -210,6 +210,12 @@ class _ReviewSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const placeholder = Icon(
+      Icons.image_outlined,
+      size: AppSize.iconMd,
+      color: AppColors.textTertiary,
+    );
+
     return Row(
       children: [
         Container(
@@ -222,12 +228,12 @@ class _ReviewSummary extends StatelessWidget {
             border: Border.all(color: AppColors.border),
           ),
           child: imageFile == null
-              ? const Icon(
-                  Icons.image_outlined,
-                  size: AppSize.iconMd,
-                  color: AppColors.textTertiary,
-                )
-              : Image.file(imageFile!, fit: BoxFit.cover),
+              ? placeholder
+              : Image.file(
+                  imageFile!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => placeholder,
+                ),
         ),
         const SizedBox(width: AppSpacing.md),
         Expanded(
