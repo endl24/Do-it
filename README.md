@@ -31,8 +31,9 @@ app/lib/
 ├── services/           # 외부 연동 (API, DB, 로컬 저장소)
 ├── widgets/            # 여러 화면에서 같이 쓰는 위젯
 └── screens/            # 화면 단위 폴더
-    └── home/
-        ├── home_screen.dart
+    ├── main/           # 하단 탭 틀 (할 일·일정·팀·설정)
+    └── todo_list/
+        ├── todo_list_screen.dart
         └── widgets/    # 이 화면에서만 쓰는 위젯
 ```
 
