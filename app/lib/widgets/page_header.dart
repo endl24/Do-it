@@ -4,7 +4,7 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/app_spacing.dart';
 import '../core/theme/app_typography.dart';
 
-/// 탭 화면 맨 위의 큰 세리프 제목. 예) `할 일`, `사분면`, `팀`, `설정`
+/// 탭 화면 맨 위의 큰 제목. 예) `할 일`, `사분면`, `팀`, `설정`
 class PageHeader extends StatelessWidget {
   const PageHeader({
     super.key,

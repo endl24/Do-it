@@ -1,9 +1,9 @@
-Copyright 2021 The Gowun Batang Project Authors (https://github.com/yangheeryu/Gowun-Batang)
-
+Copyright (c) 2017, NAVER Corporation (https://hangeul.naver.com),
+with Reserved Font Name NanumSquareRound. Font designed by Sandoll Communications Inc.
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
-http://scripts.sil.org/OFL
+https://scripts.sil.org/OFL
 
 
 -----------------------------------------------------------

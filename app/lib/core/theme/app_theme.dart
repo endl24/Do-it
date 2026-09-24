@@ -55,7 +55,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      fontFamily: AppFonts.sans,
+      fontFamily: AppFonts.base,
       textTheme: AppTextStyles.textTheme,
       scaffoldBackgroundColor: AppColors.background,
       dividerColor: AppColors.divider,

@@ -58,21 +58,13 @@ flutter:
   uses-material-design: true
 
   fonts:
-    - family: Pretendard
+    - family: NanumSquareRound
       fonts:
-        - asset: assets/fonts/Pretendard-Regular.otf
-        - asset: assets/fonts/Pretendard-Medium.otf
-          weight: 500
-        - asset: assets/fonts/Pretendard-SemiBold.otf
-          weight: 600
-        - asset: assets/fonts/Pretendard-Bold.otf
+        - asset: assets/fonts/NanumSquareRound-Regular.otf
+        - asset: assets/fonts/NanumSquareRound-Bold.otf
           weight: 700
-    # 용량을 줄이려고 KS X 1001 완성형 한글 2,350자와 영문·기호만 남긴 서브셋
-    - family: GowunBatang
-      fonts:
-        - asset: assets/fonts/GowunBatang-Regular.ttf
-        - asset: assets/fonts/GowunBatang-Bold.ttf
-          weight: 700
+        - asset: assets/fonts/NanumSquareRound-ExtraBold.otf
+          weight: 800
 
   # To add assets to your application, add an assets section, like this:
   # assets:
