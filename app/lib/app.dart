@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'core/theme/app_theme.dart';
-import 'screens/home/home_screen.dart';
+import 'screens/main/main_screen.dart';
 
 class DoItApp extends StatelessWidget {
   const DoItApp({super.key});
@@ -11,7 +11,7 @@ class DoItApp extends StatelessWidget {
     return MaterialApp(
       title: 'Do-it',
       theme: AppTheme.light,
-      home: const HomeScreen(),
+      home: const MainScreen(),
     );
   }
 }
