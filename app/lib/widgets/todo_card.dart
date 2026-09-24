@@ -105,7 +105,7 @@ class TodoCard extends StatelessWidget {
                                   ? AppColors.dangerText
                                   : AppColors.textSecondary,
                               fontWeight: isMetaEmphasized
-                                  ? FontWeight.w600
+                                  ? FontWeight.w700
                                   : null,
                             ),
                           ),

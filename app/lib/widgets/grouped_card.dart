@@ -107,7 +107,7 @@ class LabelValueRow extends StatelessWidget {
                     color: onTap == null
                         ? AppColors.textPrimary
                         : AppColors.textSecondary,
-                    fontWeight: onTap == null ? FontWeight.w600 : null,
+                    fontWeight: onTap == null ? FontWeight.w700 : null,
                   ),
                 ),
               ?valueWidget,

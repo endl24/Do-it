@@ -42,7 +42,6 @@ class CheckTile extends StatelessWidget {
                       title,
                       style: AppTextStyles.itemTitle.copyWith(
                         color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     if (subtitle != null)
