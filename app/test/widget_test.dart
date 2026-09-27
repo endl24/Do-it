@@ -20,6 +20,7 @@ void main() {
       find.byType(NavigationBar),
     );
     expect(navigationBar.selectedIndex, 1);
-    expect(find.text('일정'), findsNWidgets(2));
+    expect(find.byTooltip('이전 달'), findsOneWidget);
+    expect(find.byTooltip('다음 달'), findsOneWidget);
   });
 }
