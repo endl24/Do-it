@@ -50,6 +50,7 @@ void main() {
     expect(find.text('9월 21일 (월)'), findsOneWidget);
     expect(find.text('마감 1건'), findsOneWidget);
     expect(find.text('졸업 요건 서류 제출'), findsOneWidget);
+    expect(find.text('이 날짜에 다른 마감은 없습니다'), findsOneWidget);
     expect(find.text('마감 없는 할 일'), findsNothing);
 
     await tester.tap(find.byKey(const ValueKey('calendar-day-2026-9-24')));

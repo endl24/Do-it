@@ -387,20 +387,18 @@ class _DateDetails extends StatelessWidget {
           ],
         ),
         const SizedBox(height: AppSpacing.md),
-        if (deadlines.isEmpty)
-          const EmptyPlaceholder(message: '이 날짜에 다른 마감은 없습니다')
-        else
-          for (final deadline in deadlines) ...[
-            TodoCard(
-              title: deadline.title,
-              isImportant: deadline.isImportant,
-              isUrgent: deadline.isUrgent,
-              isDone: deadline.isDone,
-              onTap: deadline.onTap,
-              onDoneChanged: deadline.onDoneChanged,
-            ),
-            const SizedBox(height: AppSpacing.listGap),
-          ],
+        for (final deadline in deadlines) ...[
+          TodoCard(
+            title: deadline.title,
+            isImportant: deadline.isImportant,
+            isUrgent: deadline.isUrgent,
+            isDone: deadline.isDone,
+            onTap: deadline.onTap,
+            onDoneChanged: deadline.onDoneChanged,
+          ),
+          const SizedBox(height: AppSpacing.listGap),
+        ],
+        const EmptyPlaceholder(message: '이 날짜에 다른 마감은 없습니다'),
       ],
     );
   }
