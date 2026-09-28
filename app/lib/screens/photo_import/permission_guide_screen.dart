@@ -22,7 +22,7 @@ class PermissionGuideScreen extends StatefulWidget {
   final PermissionService permissionService;
 
   /// 카메라·사진 권한을 얻었을 때 06 메모 촬영으로 넘어간다.
-  // TODO(강두이): 06 메모 촬영 화면이 생기면 여기서 바로 pushReplacement한다.
+  /// `MemoCaptureScreen.open`이 이 화면을 06으로 바꾸도록 넘겨준다.
   final VoidCallback onCameraGranted;
 
   @override
