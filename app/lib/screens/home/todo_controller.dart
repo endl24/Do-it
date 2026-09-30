@@ -54,6 +54,7 @@ class TodoController extends ChangeNotifier {
 
   Future<bool> add(Todo todo) async {
     _todos.insert(0, todo);
+    _sort();
     notifyListeners();
     return _persist(todo, rollback: () => _todos.remove(todo));
   }
