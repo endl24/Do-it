@@ -28,10 +28,20 @@ Future<bool> showDeleteTodoDialog(BuildContext context, String title) {
   return showConfirmDialog(
     context,
     title: '할 일을 삭제할까요?',
-    message: "'$title'을 삭제하면 다시 복구할 수 없습니다.",
+    message: "'$title'${_objectParticle(title)} 삭제하면 이 할 일에 예약된 알림도 함께 취소됩니다.",
     confirmLabel: '삭제',
     isDestructive: true,
   );
+}
+
+/// 제목 끝 글자에 받침이 있으면 '을', 없으면 '를'. 한글이 아니면 '을(를)'.
+String _objectParticle(String text) {
+  if (text.isEmpty) return '을(를)';
+  final code = text.runes.last;
+  const firstSyllable = 0xAC00;
+  const lastSyllable = 0xD7A3;
+  if (code < firstSyllable || code > lastSyllable) return '을(를)';
+  return (code - firstSyllable) % 28 == 0 ? '를' : '을';
 }
 
 class _TodoForm extends StatefulWidget {
