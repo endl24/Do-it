@@ -36,7 +36,11 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
-        children: [for (final tab in _tabs) tab.screen],
+        // 스낵바는 바깥 Scaffold에만 뜨면 탭 화면의 FAB가 비켜 주지 않아 버튼을 가린다.
+        // 탭마다 따로 두면 그 탭의 Scaffold에 떠서 FAB 위로 올라간다.
+        children: [
+          for (final tab in _tabs) ScaffoldMessenger(child: tab.screen),
+        ],
       ),
       bottomNavigationBar: DecoratedBox(
         decoration: const BoxDecoration(

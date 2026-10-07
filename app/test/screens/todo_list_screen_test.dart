@@ -64,6 +64,63 @@ void main() {
     expect(find.text('아직 등록한 할 일이 없어요'), findsOneWidget);
     expect(find.text('다시 시도'), findsNothing);
   });
+
+  group('할 일 삭제', () {
+    Future<void> deleteTodo(WidgetTester tester, String title) async {
+      await tester.tap(find.text(title));
+      await tester.pumpAndSettle();
+      final deleteButton = find.text('할 일 삭제');
+      await tester.ensureVisible(deleteButton);
+      await tester.pumpAndSettle();
+      await tester.tap(deleteButton);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('확인 대화상자에서 취소하면 아무것도 바뀌지 않는다', (tester) async {
+      final repository = InMemoryTodoRepository([
+        _todo(id: 'keep', title: '졸업 요건 서류 제출'),
+      ]);
+      await _pumpScreen(tester, repository);
+
+      await deleteTodo(tester, '졸업 요건 서류 제출');
+      expect(find.text('할 일을 삭제할까요?'), findsOneWidget);
+      expect(
+        find.text("'졸업 요건 서류 제출'을 삭제하면 이 할 일에 예약된 알림도 함께 취소됩니다."),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('취소'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('졸업 요건 서류 제출'), findsOneWidget);
+      expect(await repository.getAll(), hasLength(1));
+    });
+
+    testWidgets('삭제한 뒤 실행 취소하면 할 일을 되살린다', (tester) async {
+      final repository = InMemoryTodoRepository([
+        _todo(id: 'undo', title: '스터디 발표 자료 정리'),
+      ]);
+      await _pumpScreen(tester, repository);
+
+      await deleteTodo(tester, '스터디 발표 자료 정리');
+      expect(
+        find.text("'스터디 발표 자료 정리'를 삭제하면 이 할 일에 예약된 알림도 함께 취소됩니다."),
+        findsOneWidget,
+      );
+      await tester.tap(find.widgetWithText(FilledButton, '삭제'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('할 일을 삭제했습니다'), findsOneWidget);
+      expect(find.text('스터디 발표 자료 정리'), findsNothing);
+      expect(await repository.getAll(), isEmpty);
+
+      await tester.tap(find.text('실행 취소'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('스터디 발표 자료 정리'), findsOneWidget);
+      expect((await repository.getAll()).single.id, 'undo');
+    });
+  });
 }
 
 class _SaveFailingTodoRepository extends InMemoryTodoRepository {
