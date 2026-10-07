@@ -75,10 +75,11 @@ void main() {
 
       await controller.load();
 
-      expect(
-        controller.todos.map((todo) => todo.id),
-        ['sooner', 'later', 'completed'],
-      );
+      expect(controller.todos.map((todo) => todo.id), [
+        'sooner',
+        'later',
+        'completed',
+      ]);
     });
 
     test('필터에 맞는 할 일만 노출한다', () async {

@@ -13,18 +13,18 @@ enum TodoQuadrant {
   eliminate;
 
   String get label => switch (this) {
-        TodoQuadrant.doNow => '지금 한다',
-        TodoQuadrant.schedule => '계획한다',
-        TodoQuadrant.delegate => '빨리 끝낸다',
-        TodoQuadrant.eliminate => '미뤄둔다',
-      };
+    TodoQuadrant.doNow => '지금 한다',
+    TodoQuadrant.schedule => '계획한다',
+    TodoQuadrant.delegate => '빨리 끝낸다',
+    TodoQuadrant.eliminate => '미뤄둔다',
+  };
 
   String get description => switch (this) {
-        TodoQuadrant.doNow => '중요 · 긴급',
-        TodoQuadrant.schedule => '중요 · 비긴급',
-        TodoQuadrant.delegate => '비중요 · 긴급',
-        TodoQuadrant.eliminate => '비중요 · 비긴급',
-      };
+    TodoQuadrant.doNow => '중요 · 긴급',
+    TodoQuadrant.schedule => '중요 · 비긴급',
+    TodoQuadrant.delegate => '비중요 · 긴급',
+    TodoQuadrant.eliminate => '비중요 · 비긴급',
+  };
 }
 
 class Todo {
@@ -101,14 +101,12 @@ class Todo {
   bool get isUrgent => urgency == TodoUrgency.urgent;
 
   TodoQuadrant get quadrant => switch ((importance, urgency)) {
-        (TodoImportance.important, TodoUrgency.urgent) => TodoQuadrant.doNow,
-        (TodoImportance.important, TodoUrgency.notUrgent) =>
-          TodoQuadrant.schedule,
-        (TodoImportance.unimportant, TodoUrgency.urgent) =>
-          TodoQuadrant.delegate,
-        (TodoImportance.unimportant, TodoUrgency.notUrgent) =>
-          TodoQuadrant.eliminate,
-      };
+    (TodoImportance.important, TodoUrgency.urgent) => TodoQuadrant.doNow,
+    (TodoImportance.important, TodoUrgency.notUrgent) => TodoQuadrant.schedule,
+    (TodoImportance.unimportant, TodoUrgency.urgent) => TodoQuadrant.delegate,
+    (TodoImportance.unimportant, TodoUrgency.notUrgent) =>
+      TodoQuadrant.eliminate,
+  };
 
   Todo copyWith({
     String? remoteId,
@@ -142,21 +140,21 @@ class Todo {
   Todo moveTo(TodoQuadrant target) {
     return switch (target) {
       TodoQuadrant.doNow => copyWith(
-          importance: TodoImportance.important,
-          urgency: TodoUrgency.urgent,
-        ),
+        importance: TodoImportance.important,
+        urgency: TodoUrgency.urgent,
+      ),
       TodoQuadrant.schedule => copyWith(
-          importance: TodoImportance.important,
-          urgency: TodoUrgency.notUrgent,
-        ),
+        importance: TodoImportance.important,
+        urgency: TodoUrgency.notUrgent,
+      ),
       TodoQuadrant.delegate => copyWith(
-          importance: TodoImportance.unimportant,
-          urgency: TodoUrgency.urgent,
-        ),
+        importance: TodoImportance.unimportant,
+        urgency: TodoUrgency.urgent,
+      ),
       TodoQuadrant.eliminate => copyWith(
-          importance: TodoImportance.unimportant,
-          urgency: TodoUrgency.notUrgent,
-        ),
+        importance: TodoImportance.unimportant,
+        urgency: TodoUrgency.notUrgent,
+      ),
     };
   }
 

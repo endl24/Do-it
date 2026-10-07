@@ -9,18 +9,13 @@ import '../../widgets/confirm_dialog.dart';
 class TodoFormResult {
   const TodoFormResult.save(this.todo) : shouldDelete = false;
 
-  const TodoFormResult.delete()
-      : todo = null,
-        shouldDelete = true;
+  const TodoFormResult.delete() : todo = null, shouldDelete = true;
 
   final Todo? todo;
   final bool shouldDelete;
 }
 
-Future<TodoFormResult?> showTodoFormSheet(
-  BuildContext context, {
-  Todo? todo,
-}) {
+Future<TodoFormResult?> showTodoFormSheet(BuildContext context, {Todo? todo}) {
   return showModalBottomSheet<TodoFormResult>(
     context: context,
     isScrollControlled: true,
@@ -143,10 +138,7 @@ class _TodoFormState extends State<_TodoForm> {
                 label: '긴급도',
                 value: _urgency,
                 segments: const [
-                  ButtonSegment(
-                    value: TodoUrgency.urgent,
-                    label: Text('긴급'),
-                  ),
+                  ButtonSegment(value: TodoUrgency.urgent, label: Text('긴급')),
                   ButtonSegment(
                     value: TodoUrgency.notUrgent,
                     label: Text('비긴급'),
@@ -175,8 +167,7 @@ class _TodoFormState extends State<_TodoForm> {
                 title: const Text('알림 사용'),
                 subtitle: const Text('마감일 알림을 받을 수 있게 표시합니다'),
                 value: _reminderEnabled,
-                onChanged: (value) =>
-                    setState(() => _reminderEnabled = value),
+                onChanged: (value) => setState(() => _reminderEnabled = value),
               ),
               const SizedBox(height: AppSpacing.lg),
               SizedBox(
@@ -194,9 +185,9 @@ class _TodoFormState extends State<_TodoForm> {
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.dangerText,
                     ),
-                    onPressed: () => Navigator.of(context).pop(
-                      const TodoFormResult.delete(),
-                    ),
+                    onPressed: () =>
+                        Navigator.of(context)
+                            .pop(const TodoFormResult.delete()),
                     child: const Text('할 일 삭제'),
                   ),
                 ),

@@ -27,9 +27,8 @@ class _TodoListScreenState extends State<TodoListScreen> {
   @override
   void initState() {
     super.initState();
-    _controller = TodoController(
-      widget.repository ?? SqliteTodoRepository(),
-    )..load();
+    _controller = TodoController(widget.repository ?? SqliteTodoRepository())
+      ..load();
   }
 
   @override
@@ -280,7 +279,9 @@ class _ErrorView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+              style: AppTextStyles.body.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
             const SizedBox(height: AppSpacing.md),
             OutlinedButton(onPressed: onRetry, child: const Text('다시 시도')),

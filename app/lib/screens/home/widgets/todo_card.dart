@@ -42,13 +42,13 @@ class TodoCard extends StatelessWidget {
                     Text(
                       todo.title,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            decoration: todo.isCompleted
-                                ? TextDecoration.lineThrough
-                                : null,
-                            color: todo.isCompleted
-                                ? const Color(0xFF969188)
-                                : null,
-                          ),
+                        decoration: todo.isCompleted
+                            ? TextDecoration.lineThrough
+                            : null,
+                        color: todo.isCompleted
+                            ? const Color(0xFF969188)
+                            : null,
+                      ),
                     ),
                     const SizedBox(height: 9),
                     Wrap(
@@ -77,7 +77,8 @@ class TodoCard extends StatelessWidget {
                         ),
                         Text(
                           _dueLabel(todo.dueDate),
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
                                 color: _isDueToday(todo.dueDate)
                                     ? const Color(0xFFC4473D)
                                     : const Color(0xFF77736A),
@@ -105,14 +106,19 @@ class TodoCard extends StatelessWidget {
 
   static (Color, Color) _colorsFor(TodoQuadrant quadrant) {
     return switch (quadrant) {
-      TodoQuadrant.doNow =>
-        (const Color(0xFFF8E0DD), const Color(0xFFB84037)),
-      TodoQuadrant.schedule =>
-        (const Color(0xFFDDEFEA), const Color(0xFF246F63)),
-      TodoQuadrant.delegate =>
-        (const Color(0xFFF7ECD2), const Color(0xFF91640C)),
-      TodoQuadrant.eliminate =>
-        (const Color(0xFFE8EDF3), const Color(0xFF526172)),
+      TodoQuadrant.doNow => (const Color(0xFFF8E0DD), const Color(0xFFB84037)),
+      TodoQuadrant.schedule => (
+        const Color(0xFFDDEFEA),
+        const Color(0xFF246F63),
+      ),
+      TodoQuadrant.delegate => (
+        const Color(0xFFF7ECD2),
+        const Color(0xFF91640C),
+      ),
+      TodoQuadrant.eliminate => (
+        const Color(0xFFE8EDF3),
+        const Color(0xFF526172),
+      ),
     };
   }
 

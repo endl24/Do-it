@@ -10,9 +10,7 @@ abstract interface class TodoRepository {
 
 class InMemoryTodoRepository implements TodoRepository {
   InMemoryTodoRepository([Iterable<Todo> initialTodos = const <Todo>[]])
-      : _todos = <String, Todo>{
-          for (final todo in initialTodos) todo.id: todo,
-        };
+    : _todos = <String, Todo>{for (final todo in initialTodos) todo.id: todo};
 
   final Map<String, Todo> _todos;
 

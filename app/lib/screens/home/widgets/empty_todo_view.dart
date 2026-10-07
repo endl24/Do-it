@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 
 class EmptyTodoView extends StatelessWidget {
-  const EmptyTodoView({
-    required this.onAdd,
-    required this.onPhoto,
-    super.key,
-  });
+  const EmptyTodoView({required this.onAdd, required this.onPhoto, super.key});
 
   final VoidCallback onAdd;
   final VoidCallback onPhoto;
@@ -40,10 +36,8 @@ class EmptyTodoView extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             '직접 입력하거나, 종이에 적어둔 메모를\n사진으로 찍어 한 번에 옮겨올 수 있습니다.',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: const Color(0xFF77736A),
-                  height: 1.55,
-                ),
+            style: Theme.of(context).textTheme.bodyLarge
+                ?.copyWith(color: const Color(0xFF77736A), height: 1.55),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 28),

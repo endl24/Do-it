@@ -49,10 +49,7 @@ void main() {
   });
 }
 
-Future<void> _pumpScreen(
-  WidgetTester tester,
-  TodoRepository repository,
-) async {
+Future<void> _pumpScreen(WidgetTester tester, TodoRepository repository) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: AppTheme.light,

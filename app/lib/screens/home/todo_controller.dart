@@ -66,10 +66,13 @@ class TodoController extends ChangeNotifier {
     _todos[index] = todo;
     _sort();
     notifyListeners();
-    return _persist(todo, rollback: () {
-      final currentIndex = _todos.indexWhere((item) => item.id == todo.id);
-      if (currentIndex >= 0) _todos[currentIndex] = previous;
-    });
+    return _persist(
+      todo,
+      rollback: () {
+        final currentIndex = _todos.indexWhere((item) => item.id == todo.id);
+        if (currentIndex >= 0) _todos[currentIndex] = previous;
+      },
+    );
   }
 
   Future<bool> toggle(Todo todo) {
@@ -98,13 +101,15 @@ class TodoController extends ChangeNotifier {
   }
 
   List<Todo> todosFor(DateTime date) {
-    return _todos.where((todo) {
-      final dueDate = todo.dueDate;
-      return dueDate != null &&
-          dueDate.year == date.year &&
-          dueDate.month == date.month &&
-          dueDate.day == date.day;
-    }).toList(growable: false);
+    return _todos
+        .where((todo) {
+          final dueDate = todo.dueDate;
+          return dueDate != null &&
+              dueDate.year == date.year &&
+              dueDate.month == date.month &&
+              dueDate.day == date.day;
+        })
+        .toList(growable: false);
   }
 
   Future<bool> _persist(Todo todo, {required VoidCallback rollback}) async {
