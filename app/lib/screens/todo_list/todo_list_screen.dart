@@ -1,21 +1,27 @@
 import 'package:flutter/material.dart';
 
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../core/theme/app_typography.dart';
+import '../../core/utils/retry_backoff.dart';
 import '../../models/todo.dart';
 import '../../services/sqlite_todo_repository.dart';
 import '../../services/todo_repository.dart';
 import '../../widgets/empty_placeholder.dart';
+import '../../widgets/error_retry_card.dart';
+import '../../widgets/offline_banner.dart';
 import '../../widgets/page_header.dart';
+import '../../widgets/skeleton_list.dart';
+import '../../widgets/sync_status_badge.dart';
 import '../../widgets/todo_card.dart';
 import '../home/todo_controller.dart';
 import 'todo_form_sheet.dart';
 
 class TodoListScreen extends StatefulWidget {
-  const TodoListScreen({super.key, this.repository});
+  const TodoListScreen({super.key, this.repository, this.isOnline = true});
 
   final TodoRepository? repository;
+
+  /// `false`면 목록 위에 오프라인 배너를 띄운다 (E1).
+  final bool isOnline;
 
   @override
   State<TodoListScreen> createState() => _TodoListScreenState();
@@ -23,18 +29,50 @@ class TodoListScreen extends StatefulWidget {
 
 class _TodoListScreenState extends State<TodoListScreen> {
   late final TodoController _controller;
+  late final _retryBackoff = RetryBackoff(onRetry: _load);
 
   @override
   void initState() {
     super.initState();
-    _controller = TodoController(widget.repository ?? SqliteTodoRepository())
-      ..load();
+    _controller = TodoController(widget.repository ?? SqliteTodoRepository());
+    _load();
   }
 
   @override
   void dispose() {
+    _retryBackoff.dispose();
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _load() async {
+    await _controller.load();
+    if (!mounted) return;
+    setState(() {
+      if (_controller.loadErrorMessage == null) {
+        _retryBackoff.recordSuccess();
+      } else {
+        _retryBackoff.recordFailure();
+      }
+    });
+  }
+
+  /// 서버와 동기화하는 할 일이 하나라도 있을 때만 동기화 배지를 보여준다.
+  /// 모두 단말에만 있으면 '동기화 완료'가 사실이 아니기 때문이다.
+  Widget? _buildSyncBadge() {
+    final todos = _controller.todos;
+    if (_controller.isLoading ||
+        todos.every((todo) => todo.syncStatus == TodoSyncStatus.localOnly)) {
+      return null;
+    }
+    final pendingCount = todos
+        .where(
+          (todo) =>
+              todo.syncStatus == TodoSyncStatus.pending ||
+              todo.syncStatus == TodoSyncStatus.failed,
+        )
+        .length;
+    return SyncStatusBadge(pendingCount: pendingCount);
   }
 
   @override
@@ -50,11 +88,22 @@ class _TodoListScreenState extends State<TodoListScreen> {
                 subtitle: _controller.isLoading
                     ? '저장된 할 일을 불러오는 중입니다'
                     : '남은 할 일 ${_controller.incompleteCount}개',
+                trailing: _buildSyncBadge(),
               ),
               _FilterBar(
                 selected: _controller.filter,
                 onSelected: _controller.setFilter,
               ),
+              if (!widget.isOnline)
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.screenHorizontal,
+                    AppSpacing.sm,
+                    AppSpacing.screenHorizontal,
+                    0,
+                  ),
+                  child: OfflineBanner(),
+                ),
               Expanded(child: _buildBody()),
             ],
           ),
@@ -69,13 +118,30 @@ class _TodoListScreenState extends State<TodoListScreen> {
   }
 
   Widget _buildBody() {
+    const statusPadding = EdgeInsets.fromLTRB(
+      AppSpacing.screenHorizontal,
+      AppSpacing.md,
+      AppSpacing.screenHorizontal,
+      0,
+    );
     if (_controller.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const SingleChildScrollView(
+        padding: statusPadding,
+        child: SkeletonList(),
+      );
     }
 
     final loadErrorMessage = _controller.loadErrorMessage;
     if (loadErrorMessage != null) {
-      return _ErrorView(message: loadErrorMessage, onRetry: _controller.load);
+      return SingleChildScrollView(
+        padding: statusPadding,
+        child: ErrorRetryCard(
+          title: '할 일을 불러오지 못했습니다',
+          message: loadErrorMessage,
+          isSlowedDown: _retryBackoff.isSlowedDown,
+          onRetry: _load,
+        ),
+      );
     }
 
     final todos = _controller.visibleTodos;
@@ -88,21 +154,21 @@ class _TodoListScreenState extends State<TodoListScreen> {
           AppSpacing.xxl + AppSize.fab,
         ),
         child: Center(
-          child: EmptyPlaceholder(
-            icon: Icons.checklist_rounded,
-            message: _controller.todos.isEmpty
-                ? '아직 등록한 할 일이 없어요'
-                : '이 조건에 맞는 할 일이 없어요',
-            description: _controller.todos.isEmpty
-                ? '오른쪽 아래 버튼을 눌러 첫 할 일을 등록해 보세요.'
-                : '다른 필터를 선택해 보세요.',
-          ),
+          child: _controller.todos.isEmpty
+              ? const EmptyPlaceholder(
+                  icon: Icons.checklist_rounded,
+                  message: '아직 등록한 할 일이 없어요',
+                  description: '오른쪽 아래 버튼을 눌러 첫 할 일을 등록해 보세요.',
+                )
+              : EmptyPlaceholder.filtered(
+                  onResetFilter: () => _controller.setFilter(TodoFilter.all),
+                ),
         ),
       );
     }
 
     return RefreshIndicator(
-      onRefresh: _controller.load,
+      onRefresh: _load,
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.screenHorizontal,
@@ -252,42 +318,6 @@ class _FilterChip extends StatelessWidget {
       label: Text(label),
       selected: value == selected,
       onSelected: (_) => onSelected(value),
-    );
-  }
-}
-
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.error_outline,
-              size: AppSize.fab,
-              color: AppColors.danger,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.body.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            OutlinedButton(onPressed: onRetry, child: const Text('다시 시도')),
-          ],
-        ),
-      ),
     );
   }
 }
