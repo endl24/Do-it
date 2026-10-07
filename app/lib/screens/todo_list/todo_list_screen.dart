@@ -1,15 +1,293 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_typography.dart';
+import '../../models/todo.dart';
+import '../../services/sqlite_todo_repository.dart';
+import '../../services/todo_repository.dart';
+import '../../widgets/empty_placeholder.dart';
 import '../../widgets/page_header.dart';
+import '../../widgets/todo_card.dart';
+import '../home/todo_controller.dart';
+import 'todo_form_sheet.dart';
 
-class TodoListScreen extends StatelessWidget {
-  const TodoListScreen({super.key});
+class TodoListScreen extends StatefulWidget {
+  const TodoListScreen({super.key, this.repository});
+
+  final TodoRepository? repository;
+
+  @override
+  State<TodoListScreen> createState() => _TodoListScreenState();
+}
+
+class _TodoListScreenState extends State<TodoListScreen> {
+  late final TodoController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TodoController(widget.repository ?? SqliteTodoRepository())
+      ..load();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    // TODO(고은재): 할 일 화면 구현 (설계서 01·02, A1 A2 A5 A6)
-    return const Scaffold(
-      body: SafeArea(child: PageHeader(title: '할 일')),
+    return Scaffold(
+      body: SafeArea(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, _) => Column(
+            children: [
+              PageHeader(
+                title: '할 일',
+                subtitle: _controller.isLoading
+                    ? '저장된 할 일을 불러오는 중입니다'
+                    : '남은 할 일 ${_controller.incompleteCount}개',
+              ),
+              _FilterBar(
+                selected: _controller.filter,
+                onSelected: _controller.setFilter,
+              ),
+              Expanded(child: _buildBody()),
+            ],
+          ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _openForm(),
+        icon: const Icon(Icons.add),
+        label: const Text('할 일 추가'),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_controller.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final loadErrorMessage = _controller.loadErrorMessage;
+    if (loadErrorMessage != null) {
+      return _ErrorView(message: loadErrorMessage, onRetry: _controller.load);
+    }
+
+    final todos = _controller.visibleTodos;
+    if (todos.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.screenHorizontal,
+          AppSpacing.lg,
+          AppSpacing.screenHorizontal,
+          AppSpacing.xxl + AppSize.fab,
+        ),
+        child: Center(
+          child: EmptyPlaceholder(
+            icon: Icons.checklist_rounded,
+            message: _controller.todos.isEmpty
+                ? '아직 등록한 할 일이 없어요'
+                : '이 조건에 맞는 할 일이 없어요',
+            description: _controller.todos.isEmpty
+                ? '오른쪽 아래 버튼을 눌러 첫 할 일을 등록해 보세요.'
+                : '다른 필터를 선택해 보세요.',
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _controller.load,
+      child: ListView.separated(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.screenHorizontal,
+          AppSpacing.md,
+          AppSpacing.screenHorizontal,
+          AppSpacing.xxl + AppSize.fab,
+        ),
+        itemCount: todos.length,
+        separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.listGap),
+        itemBuilder: (context, index) {
+          final todo = todos[index];
+          return TodoCard(
+            key: ValueKey(todo.id),
+            title: todo.title,
+            isImportant: todo.isImportant,
+            isUrgent: todo.isUrgent,
+            isDone: todo.isCompleted,
+            meta: _dueLabel(todo.dueDate),
+            isMetaEmphasized: _isDueToday(todo.dueDate),
+            isPendingSync: todo.syncStatus == TodoSyncStatus.pending,
+            onDoneChanged: (_) => _toggle(todo),
+            onTap: () => _openForm(todo),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _openForm([Todo? todo]) async {
+    final result = await showTodoFormSheet(context, todo: todo);
+    if (!mounted || result == null) return;
+
+    if (result.shouldDelete) {
+      await _delete(todo!);
+      return;
+    }
+
+    final savedTodo = result.todo!;
+    final succeeded = todo == null
+        ? await _controller.add(savedTodo)
+        : await _controller.update(savedTodo);
+    if (!mounted) return;
+    _showResult(
+      succeeded,
+      successMessage: todo == null ? '할 일을 추가했습니다.' : '할 일을 수정했습니다.',
+    );
+  }
+
+  Future<void> _toggle(Todo todo) async {
+    final succeeded = await _controller.toggle(todo);
+    if (!mounted || succeeded) return;
+    _showResult(false, successMessage: '');
+  }
+
+  Future<void> _delete(Todo todo) async {
+    final confirmed = await showDeleteTodoDialog(context, todo.title);
+    if (!mounted || !confirmed) return;
+    final succeeded = await _controller.remove(todo);
+    if (!mounted) return;
+    _showResult(succeeded, successMessage: '할 일을 삭제했습니다.');
+  }
+
+  void _showResult(bool succeeded, {required String successMessage}) {
+    final message = succeeded ? successMessage : _controller.errorMessage;
+    if (message == null || message.isEmpty) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  static bool _isDueToday(DateTime? date) {
+    if (date == null) return false;
+    final now = DateTime.now();
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
+  }
+
+  static String? _dueLabel(DateTime? date) {
+    if (date == null) return null;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final due = DateTime(date.year, date.month, date.day);
+    if (due == today) return '오늘 마감';
+    if (due == today.add(const Duration(days: 1))) return '내일';
+    return '${date.month}월 ${date.day}일';
+  }
+}
+
+class _FilterBar extends StatelessWidget {
+  const _FilterBar({required this.selected, required this.onSelected});
+
+  final TodoFilter selected;
+  final ValueChanged<TodoFilter> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.screenHorizontal,
+      ),
+      child: Row(
+        children: [
+          _FilterChip(
+            label: '전체',
+            value: TodoFilter.all,
+            selected: selected,
+            onSelected: onSelected,
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          _FilterChip(
+            label: '미완료',
+            value: TodoFilter.incomplete,
+            selected: selected,
+            onSelected: onSelected,
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          _FilterChip(
+            label: '완료',
+            value: TodoFilter.completed,
+            selected: selected,
+            onSelected: onSelected,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.value,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String label;
+  final TodoFilter value;
+  final TodoFilter selected;
+  final ValueChanged<TodoFilter> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: value == selected,
+      onSelected: (_) => onSelected(value),
+    );
+  }
+}
+
+class _ErrorView extends StatelessWidget {
+  const _ErrorView({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              size: AppSize.fab,
+              color: AppColors.danger,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.body.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            OutlinedButton(onPressed: onRetry, child: const Text('다시 시도')),
+          ],
+        ),
+      ),
     );
   }
 }
