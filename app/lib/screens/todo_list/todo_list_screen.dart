@@ -73,9 +73,9 @@ class _TodoListScreenState extends State<TodoListScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final errorMessage = _controller.errorMessage;
-    if (errorMessage != null && _controller.todos.isEmpty) {
-      return _ErrorView(message: errorMessage, onRetry: _controller.load);
+    final loadErrorMessage = _controller.loadErrorMessage;
+    if (loadErrorMessage != null) {
+      return _ErrorView(message: loadErrorMessage, onRetry: _controller.load);
     }
 
     final todos = _controller.visibleTodos;

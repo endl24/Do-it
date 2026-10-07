@@ -47,6 +47,28 @@ void main() {
     expect(find.text('과제 제출'), findsOneWidget);
     expect(find.text('완료', skipOffstage: false), findsNWidgets(2));
   });
+
+  testWidgets('빈 목록에서 저장에 실패하면 빈 상태를 유지하고 안내만 띄운다', (tester) async {
+    await _pumpScreen(tester, _SaveFailingTodoRepository());
+
+    await tester.tap(find.text('할 일 추가'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField), '저장 실패');
+    final addButton = find.widgetWithText(FilledButton, '추가');
+    await tester.ensureVisible(addButton);
+    await tester.pumpAndSettle();
+    await tester.tap(addButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('기기에 저장하지 못했습니다. 저장 공간을 확인해 주세요.'), findsOneWidget);
+    expect(find.text('아직 등록한 할 일이 없어요'), findsOneWidget);
+    expect(find.text('다시 시도'), findsNothing);
+  });
+}
+
+class _SaveFailingTodoRepository extends InMemoryTodoRepository {
+  @override
+  Future<void> save(Todo todo) => throw Exception('save failed');
 }
 
 Future<void> _pumpScreen(WidgetTester tester, TodoRepository repository) async {

@@ -112,7 +112,75 @@ void main() {
       expect(await controller.remove(controller.todos.single), isTrue);
       expect(await repository.getAll(), isEmpty);
     });
+
+    test('저장 실패는 되돌리고, 다음 작업이 성공하면 오류 메시지를 지운다', () async {
+      final repository = _FailingTodoRepository()..failSave = true;
+      final controller = TodoController(repository);
+      await controller.load();
+
+      expect(await controller.add(_todo(id: 'fail')), isFalse);
+      expect(controller.todos, isEmpty);
+      expect(controller.errorMessage, isNotNull);
+      expect(controller.loadErrorMessage, isNull);
+
+      repository.failSave = false;
+      expect(await controller.add(_todo(id: 'ok')), isTrue);
+      expect(controller.errorMessage, isNull);
+    });
+
+    test('삭제 실패 뒤 마지막 할 일을 지워도 불러오기 오류로 남지 않는다', () async {
+      final repository = _FailingTodoRepository([_todo(id: 'last')]);
+      final controller = TodoController(repository);
+      await controller.load();
+
+      repository.failDelete = true;
+      expect(await controller.remove(controller.todos.single), isFalse);
+      expect(controller.todos, hasLength(1));
+
+      repository.failDelete = false;
+      expect(await controller.remove(controller.todos.single), isTrue);
+      expect(controller.todos, isEmpty);
+      expect(controller.errorMessage, isNull);
+      expect(controller.loadErrorMessage, isNull);
+    });
+
+    test('불러오기에 실패하면 불러오기 오류 메시지를 둔다', () async {
+      final controller = TodoController(
+        _FailingTodoRepository()..failLoad = true,
+      );
+
+      await controller.load();
+
+      expect(controller.isLoading, isFalse);
+      expect(controller.loadErrorMessage, isNotNull);
+    });
   });
+}
+
+class _FailingTodoRepository extends InMemoryTodoRepository {
+  _FailingTodoRepository([super.initialTodos]);
+
+  bool failLoad = false;
+  bool failSave = false;
+  bool failDelete = false;
+
+  @override
+  Future<List<Todo>> getAll() {
+    if (failLoad) throw Exception('load failed');
+    return super.getAll();
+  }
+
+  @override
+  Future<void> save(Todo todo) {
+    if (failSave) throw Exception('save failed');
+    return super.save(todo);
+  }
+
+  @override
+  Future<void> delete(String id) {
+    if (failDelete) throw Exception('delete failed');
+    return super.delete(id);
+  }
 }
 
 Todo _todo({

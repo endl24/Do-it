@@ -12,6 +12,11 @@ class TodoController extends ChangeNotifier {
   final List<Todo> _todos = <Todo>[];
 
   bool isLoading = true;
+
+  /// 목록을 불러오지 못했을 때의 메시지. 화면 전체를 오류 상태로 바꾼다.
+  String? loadErrorMessage;
+
+  /// 마지막 추가·수정·삭제가 실패했을 때의 메시지. 다음 작업을 시작하면 지운다.
   String? errorMessage;
   TodoFilter filter = TodoFilter.all;
 
@@ -31,6 +36,7 @@ class TodoController extends ChangeNotifier {
 
   Future<void> load() async {
     isLoading = true;
+    loadErrorMessage = null;
     errorMessage = null;
     notifyListeners();
     try {
@@ -39,7 +45,7 @@ class TodoController extends ChangeNotifier {
         ..addAll(await _repository.getAll());
       _sort();
     } catch (_) {
-      errorMessage = '저장된 할 일을 불러오지 못했습니다. 다시 시도해 주세요.';
+      loadErrorMessage = '저장된 할 일을 불러오지 못했습니다. 다시 시도해 주세요.';
     } finally {
       isLoading = false;
       notifyListeners();
@@ -53,6 +59,7 @@ class TodoController extends ChangeNotifier {
   }
 
   Future<bool> add(Todo todo) async {
+    errorMessage = null;
     _todos.insert(0, todo);
     _sort();
     notifyListeners();
@@ -62,6 +69,7 @@ class TodoController extends ChangeNotifier {
   Future<bool> update(Todo todo) async {
     final index = _todos.indexWhere((item) => item.id == todo.id);
     if (index < 0) return false;
+    errorMessage = null;
     final previous = _todos[index];
     _todos[index] = todo;
     _sort();
@@ -87,6 +95,7 @@ class TodoController extends ChangeNotifier {
   Future<bool> remove(Todo todo) async {
     final index = _todos.indexOf(todo);
     if (index < 0) return false;
+    errorMessage = null;
     _todos.removeAt(index);
     notifyListeners();
     try {
