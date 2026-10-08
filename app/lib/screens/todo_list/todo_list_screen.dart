@@ -46,6 +46,8 @@ class _TodoListScreenState extends State<TodoListScreen> {
   }
 
   Future<void> _load() async {
+    // 직접 다시 시도한 사이에 예약된 재시도가 겹쳐 두 번 불러오지 않게 한다.
+    _retryBackoff.cancel();
     await _controller.load();
     if (!mounted) return;
     setState(() {
