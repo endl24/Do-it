@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/retry_backoff.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/danger_button.dart';
 import '../../widgets/empty_placeholder.dart';
+import '../../widgets/error_retry_card.dart';
 import '../../widgets/notice_box.dart';
+import '../../widgets/offline_banner.dart';
 import '../../widgets/page_header.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/skeleton_list.dart';
@@ -57,12 +60,21 @@ class _TeamScreenState extends State<TeamScreen> {
   final _updatingTodoIds = <String>{};
   bool _isLeaving = false;
   String? _actionError;
+  late final _retryBackoff = RetryBackoff(onRetry: _autoRetry);
 
   bool get _canAct =>
       widget.isOnline &&
       !widget.isLoading &&
       widget.errorMessage == null &&
       !_isLeaving;
+
+  bool get _hasLoadError => widget.errorMessage != null && !widget.isLoading;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_hasLoadError) _retryBackoff.recordFailure();
+  }
 
   @override
   void didUpdateWidget(covariant TeamScreen oldWidget) {
@@ -72,6 +84,33 @@ class _TeamScreenState extends State<TeamScreen> {
       _todos = List.of(widget.team?.todos ?? []);
       _actionError = null;
     }
+    _trackLoadResult(oldWidget);
+  }
+
+  @override
+  void dispose() {
+    _retryBackoff.dispose();
+    super.dispose();
+  }
+
+  /// 부르는 쪽이 넘겨준 로딩·오류 값이 바뀔 때 연속 실패 횟수를 센다.
+  void _trackLoadResult(TeamScreen oldWidget) {
+    final wasFinished = oldWidget.errorMessage == null || oldWidget.isLoading;
+    if (_hasLoadError && wasFinished) {
+      _retryBackoff.recordFailure();
+    } else if (!widget.isLoading && widget.errorMessage == null) {
+      _retryBackoff.recordSuccess();
+    }
+    if (!widget.isOnline) {
+      _retryBackoff.cancel();
+    } else if (!oldWidget.isOnline && _hasLoadError) {
+      // 연결이 돌아오면 예약을 기다리지 않고 바로 다시 불러온다.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _autoRetry());
+    }
+  }
+
+  void _autoRetry() {
+    if (mounted && widget.isOnline && _hasLoadError) widget.onRetry?.call();
   }
 
   void _showMessage(String message) {
@@ -244,10 +283,7 @@ class _TeamScreenState extends State<TeamScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (!widget.isOnline) ...[
-                    const NoticeBox(
-                      message: '팀 기능은 연결된 뒤에 사용할 수 있습니다',
-                      icon: Icons.wifi_off,
-                    ),
+                    const OfflineBanner(message: '팀 기능은 연결된 뒤에 사용할 수 있습니다'),
                     const SizedBox(height: AppSpacing.md),
                   ],
                   if (_actionError case final message?) ...[
@@ -256,14 +292,13 @@ class _TeamScreenState extends State<TeamScreen> {
                   ],
                   if (widget.isLoading)
                     const SkeletonList()
-                  else if (widget.errorMessage case final message?) ...[
-                    NoticeBox.error(message: message),
-                    const SizedBox(height: AppSpacing.md),
-                    OutlinedButton(
-                      onPressed: widget.isOnline ? widget.onRetry : null,
-                      child: const Text('다시 시도'),
-                    ),
-                  ] else if (team == null) ...[
+                  else if (widget.errorMessage case final message?)
+                    ErrorRetryCard(
+                      message: message,
+                      isSlowedDown: _retryBackoff.isSlowedDown,
+                      onRetry: widget.isOnline ? widget.onRetry : null,
+                    )
+                  else if (team == null) ...[
                     const SizedBox(height: AppSpacing.xxl),
                     StatusMessage.icon(
                       icon: Icons.group_outlined,
