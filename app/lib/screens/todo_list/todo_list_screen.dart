@@ -6,6 +6,7 @@ import '../../core/theme/app_typography.dart';
 import '../../models/todo.dart';
 import '../../services/sqlite_todo_repository.dart';
 import '../../services/todo_repository.dart';
+import '../../widgets/confirm_dialog.dart';
 import '../../widgets/empty_placeholder.dart';
 import '../../widgets/page_header.dart';
 import '../../widgets/todo_card.dart';
@@ -162,7 +163,22 @@ class _TodoListScreenState extends State<TodoListScreen> {
     if (!mounted || !confirmed) return;
     final succeeded = await _controller.remove(todo);
     if (!mounted) return;
-    _showResult(succeeded, successMessage: '할 일을 삭제했습니다.');
+    if (!succeeded) {
+      _showResult(false, successMessage: '');
+      return;
+    }
+    // TODO(강두이): 알림 예약 서비스가 생기면 삭제할 때 예약 알림을 취소하고, 실행 취소하면 다시 예약한다 (A30).
+    showUndoSnackBar(
+      context,
+      message: '할 일을 삭제했습니다',
+      onUndo: () => _restore(todo),
+    );
+  }
+
+  Future<void> _restore(Todo todo) async {
+    final succeeded = await _controller.add(todo);
+    if (!mounted || succeeded) return;
+    _showResult(false, successMessage: '');
   }
 
   void _showResult(bool succeeded, {required String successMessage}) {

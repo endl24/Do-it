@@ -66,7 +66,12 @@ Future<bool> showConfirmDialog(
   return isConfirmed ?? false;
 }
 
+/// [showUndoSnackBar]를 띄워 두는 시간. 설계서 15의 "하단 안내 5초 표시".
+const undoSnackBarDuration = Duration(seconds: 5);
+
 /// 되돌리기 버튼이 있는 스낵바. 예) `할 일을 삭제했습니다  [실행 취소]`
+///
+/// [undoSnackBarDuration]이 지나면 저절로 닫힌다.
 void showUndoSnackBar(
   BuildContext context, {
   required String message,
@@ -78,6 +83,9 @@ void showUndoSnackBar(
     ..showSnackBar(
       SnackBar(
         content: Text(message),
+        duration: undoSnackBarDuration,
+        // 액션이 있는 스낵바는 기본으로 닫히지 않으므로 직접 꺼 둔다.
+        persist: false,
         action: SnackBarAction(label: undoLabel, onPressed: onUndo),
       ),
     );

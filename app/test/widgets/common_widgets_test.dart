@@ -157,5 +157,63 @@ void main() {
     await tester.tap(find.text('취소'));
     await tester.pumpAndSettle();
     expect(await canceled, isFalse);
+
+    final dismissed = showConfirmDialog(
+      savedContext,
+      title: '할 일을 삭제할까요?',
+      message: '예약된 알림도 함께 취소됩니다.',
+      confirmLabel: '삭제',
+    );
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    expect(await dismissed, isFalse);
+  });
+
+  group('showUndoSnackBar', () {
+    Future<BuildContext> pumpHost(WidgetTester tester) async {
+      late BuildContext savedContext;
+      await tester.pumpWidget(
+        _wrap(
+          Builder(
+            builder: (context) {
+              savedContext = context;
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+      return savedContext;
+    }
+
+    testWidgets('실행 취소를 누르면 onUndo를 부른다', (tester) async {
+      final context = await pumpHost(tester);
+      var undoCount = 0;
+
+      showUndoSnackBar(
+        context,
+        message: '할 일을 삭제했습니다',
+        onUndo: () => undoCount++,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('실행 취소'));
+      await tester.pumpAndSettle();
+
+      expect(undoCount, 1);
+      expect(find.text('할 일을 삭제했습니다'), findsNothing);
+    });
+
+    testWidgets('5초가 지나면 저절로 닫힌다', (tester) async {
+      final context = await pumpHost(tester);
+
+      showUndoSnackBar(context, message: '할 일을 삭제했습니다', onUndo: () {});
+      await tester.pumpAndSettle();
+      await tester.pump(undoSnackBarDuration - const Duration(seconds: 1));
+      expect(find.text('할 일을 삭제했습니다'), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+      expect(find.text('할 일을 삭제했습니다'), findsNothing);
+    });
   });
 }
