@@ -107,7 +107,8 @@ class AppTheme {
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
         elevation: 2,
-        shape: CircleBorder(),
+        // 정사각형 FAB는 원으로, 글자가 있는 확장 FAB는 알약 모양으로 그려진다.
+        shape: StadiumBorder(),
         sizeConstraints: BoxConstraints.tightFor(
           width: AppSize.fab,
           height: AppSize.fab,
