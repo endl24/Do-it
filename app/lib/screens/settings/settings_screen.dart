@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../services/permission_service.dart';
 import '../../widgets/confirm_dialog.dart';
-import '../../widgets/notice_box.dart';
+import '../../widgets/error_retry_card.dart';
 import '../../widgets/page_header.dart';
 import '../notification_settings/notification_settings.dart';
 import '../notification_settings/notification_settings_screen.dart';
@@ -227,13 +227,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
               child: Column(
                 children: [
+                  // 로그아웃·탈퇴 같은 요청이라 자동으로 다시 보내지 않는다.
                   if (_error != null) ...[
-                    NoticeBox.error(message: _error!),
-                    TextButton(
-                      onPressed: _isBusy ? null : _retry,
-                      child: const Text('다시 시도'),
+                    ErrorRetryCard(
+                      message: _error!,
+                      onRetry: _isBusy ? null : _retry,
                     ),
-                    const SizedBox(height: AppSpacing.sm),
+                    const SizedBox(height: AppSpacing.md),
                   ],
                   SettingsContent(
                     name: _savedName,

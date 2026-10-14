@@ -11,14 +11,40 @@ class EmptyPlaceholder extends StatelessWidget {
     required this.message,
     this.description,
     this.icon,
+    this.onTap,
   });
+
+  /// 필터 때문에 보일 항목이 없을 때. 누르면 [onResetFilter]로 필터를 '전체'로 되돌린다 (16).
+  const EmptyPlaceholder.filtered({
+    super.key,
+    required VoidCallback onResetFilter,
+  }) : message = '조건에 맞는 할 일이 없습니다',
+       description = "필터를 '전체'로 바꿔 보세요",
+       icon = Icons.search,
+       onTap = onResetFilter;
 
   final String message;
   final String? description;
   final IconData? icon;
 
+  /// 박스 전체를 누를 수 있게 한다.
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
+    final box = _buildBox();
+    if (onTap == null) return box;
+    return Semantics(
+      button: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: box,
+      ),
+    );
+  }
+
+  Widget _buildBox() {
     final hasIcon = icon != null;
 
     return DashedBorderBox(

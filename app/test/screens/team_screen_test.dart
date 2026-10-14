@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:do_it/core/theme/app_theme.dart';
 import 'package:do_it/screens/team/team_screen.dart';
 import 'package:do_it/screens/team/team_view_data.dart';
+import 'package:do_it/widgets/error_retry_card.dart';
 import 'package:do_it/widgets/todo_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -290,6 +291,37 @@ void main() {
     );
     expect(find.textContaining('팀을 불러오지 못했습니다'), findsOneWidget);
     await tester.tap(find.text('다시 시도'));
+    expect(retryCalls, 1);
+  });
+
+  testWidgets('연속 실패하면 문구를 바꾸고, 연결이 돌아오면 바로 다시 불러온다', (tester) async {
+    var retryCalls = 0;
+    const error = '팀을 불러오지 못했습니다. 연결 상태를 확인해 주세요.';
+    TeamScreen screen({
+      bool isLoading = false,
+      String? errorMessage,
+      bool isOnline = true,
+    }) => TeamScreen(
+      isLoading: isLoading,
+      errorMessage: errorMessage,
+      isOnline: isOnline,
+      onRetry: () => retryCalls++,
+    );
+
+    await _pumpTeam(tester, screen(errorMessage: error));
+    await _pumpTeam(tester, screen(isLoading: true));
+    await _pumpTeam(tester, screen(errorMessage: error));
+    expect(find.text(ErrorRetryCard.slowDownMessage), findsNothing);
+    await _pumpTeam(tester, screen(isLoading: true));
+    await _pumpTeam(tester, screen(errorMessage: error));
+    expect(find.text(ErrorRetryCard.slowDownMessage), findsOneWidget);
+
+    await _pumpTeam(tester, screen(errorMessage: error, isOnline: false));
+    await tester.pump(const Duration(minutes: 3));
+    expect(retryCalls, 0);
+
+    await _pumpTeam(tester, screen(errorMessage: error));
+    await tester.pump();
     expect(retryCalls, 1);
   });
 
