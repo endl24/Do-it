@@ -36,10 +36,10 @@
 | 클라우드 AI (선택) | Firebase AI Logic + Gemini Flash | `firebase_ai` | 사분면 제안, 인식 결과 다듬기 (필요할 때 추가) |
 
 ### 선택 이유
-- **Flutter** (대안: React Native, Kotlin Multiplatform): 하나의 UI 코드로 Android·iOS에 같은 화면이 나와 UI 설계서대로 만들기 쉽고, 화면 단위로 작업을 나누기 좋습니다. Firebase와 ML Kit 모두 Flutter 패키지를 제공합니다.
+- **Flutter**: 하나의 UI 코드로 Android·iOS에 같은 화면이 나와 UI 설계서대로 만들기 쉽고, 화면 단위로 작업을 나누기 좋습니다. Firebase와 ML Kit 모두 Flutter 패키지를 제공합니다.
 - **SQLite** (대안: shared_preferences): 할 일은 중요도·긴급도·마감일·동기화 상태 등 여러 필드를 가지고 완료 여부와 마감일 순으로 정렬해야 해서, 키-값 저장보다 표 형태로 저장·조회하는 SQLite가 알맞습니다.
 - **Firebase** (대안: Supabase): Firestore가 기기 캐시와 대기 쓰기를 기본으로 제공해, 오프라인에서 쓴 할 일을 연결이 돌아오면 자동으로 서버에 반영합니다. 아직 반영되지 않은 항목은 `hasPendingWrites`로 구분해 '동기화 대기'로 표시할 수 있습니다. Supabase는 같은 동작을 위해 대기 큐와 재전송·병합 로직을 직접 만들어야 합니다.
-- **ML Kit** (대안: Apple Vision, ONNX Runtime + PP-OCRv5, Gemini Nano·Apple Foundation Models): 글자 인식과 마감일 추출을 모두 지원하면서 Android·iOS에서 동작하는 것은 ML Kit뿐입니다. 한국어 모델이 내장되어 있어 모델을 직접 넣을 필요가 없고, 기기 안에서 무료로 동작해 오프라인에서도 쓸 수 있습니다.
+- **ML Kit**: 글자 인식과 마감일 추출을 모두 지원하고 Android·iOS에서 동작합니다. 한국어 모델이 내장되어 있어 모델을 직접 넣을 필요가 없고, 기기 안에서 무료로 동작해 오프라인에서도 쓸 수 있습니다.
 - **Firebase AI Logic**: 이미 쓰는 Firebase 프로젝트에 바로 연결되어 앱에 API 키를 넣지 않아도 되고, 이미지도 입력으로 보낼 수 있어 인식 실패 시 재인식까지 처리할 수 있습니다.
 
 ### 원칙
