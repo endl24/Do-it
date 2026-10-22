@@ -25,6 +25,28 @@
 - 색·여백·글자 크기는 `app/lib/core/theme/`의 디자인 토큰과 같은 값입니다. 한쪽을 바꾸면 다른 쪽도 함께 맞춰 주세요.
 - 피그마에는 나눔스퀘어라운드가 없어 Noto Serif KR·Noto Sans KR로 대신 표시합니다.
 
+## 기술 스택
+| 구분 | 선택 | 주요 패키지 | 쓰는 곳 |
+| --- | --- | --- | --- |
+| 크로스플랫폼 | Flutter (Dart) | — | Android·iOS 화면을 한 벌의 코드로 |
+| 로컬 저장 | SQLite | `sqflite` | 할 일 로컬 저장 (A7) |
+| 백엔드 | Firebase (Firestore, Authentication) | `firebase_core`, `cloud_firestore`, `firebase_auth` | 오프라인 작성·서버 동기화 (A20–A26), 인증, 팀 공유 |
+| 온디바이스 AI | ML Kit | `google_mlkit_text_recognition` (한국어 모델) | 메모 사진 글자 인식 (A14–A19) |
+| | | `google_mlkit_entity_extraction` | 할 일 문장에서 마감일 추출 |
+| 클라우드 AI (선택) | Firebase AI Logic + Gemini Flash | `firebase_ai` | 사분면 제안, 인식 결과 다듬기 (필요할 때 추가) |
+
+### 선택 이유
+- **Flutter** (대안: React Native, Kotlin Multiplatform): 하나의 UI 코드로 Android·iOS에 같은 화면이 나와 UI 설계서대로 만들기 쉽고, 화면 단위로 작업을 나누기 좋습니다. Firebase와 ML Kit 모두 Flutter 패키지를 제공합니다.
+- **SQLite** (대안: shared_preferences): 할 일은 중요도·긴급도·마감일·동기화 상태 등 여러 필드를 가지고 완료 여부와 마감일 순으로 정렬해야 해서, 키-값 저장보다 표 형태로 저장·조회하는 SQLite가 알맞습니다.
+- **Firebase** (대안: Supabase): Firestore가 기기 캐시와 대기 쓰기를 기본으로 제공해, 오프라인에서 쓴 할 일을 연결이 돌아오면 자동으로 서버에 반영합니다. 아직 반영되지 않은 항목은 `hasPendingWrites`로 구분해 '동기화 대기'로 표시할 수 있습니다. Supabase는 같은 동작을 위해 대기 큐와 재전송·병합 로직을 직접 만들어야 합니다.
+- **ML Kit** (대안: Apple Vision, ONNX Runtime + PP-OCRv5, Gemini Nano·Apple Foundation Models): 글자 인식과 마감일 추출을 모두 지원하면서 Android·iOS에서 동작하는 것은 ML Kit뿐입니다. 한국어 모델이 내장되어 있어 모델을 직접 넣을 필요가 없고, 기기 안에서 무료로 동작해 오프라인에서도 쓸 수 있습니다.
+- **Firebase AI Logic**: 이미 쓰는 Firebase 프로젝트에 바로 연결되어 앱에 API 키를 넣지 않아도 되고, 이미지도 입력으로 보낼 수 있어 인식 실패 시 재인식까지 처리할 수 있습니다.
+
+### 원칙
+- 외부 서비스는 무료 요금제 안에서만 사용합니다.
+- 사진 글자 인식은 기기 안에서 처리하고 사진을 외부로 보내지 않습니다.
+- 클라우드 AI는 온라인이고 사용자가 요청했을 때만 호출하며, 실패하면 기기에서 처리한 결과를 그대로 씁니다.
+
 ## 실행
 ```bash
 cd app
