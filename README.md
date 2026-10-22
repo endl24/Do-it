@@ -14,7 +14,7 @@
 > - 여러 화면에서 쓰는 위젯(`lib/widgets/`)은 강두이가 관리합니다. 추가하거나 수정할 때는 강두이와 먼저 상의해 주세요.
 
 ## 디자인
-[Figma — Do-it](https://www.figma.com/design/W8vL6iAoammK9XX3iNv7N2/Do-it)에 요구사항 명세서와 UI 설계서(v1.2)를 옮겨 두었습니다.
+[Figma — Do-it](https://www.figma.com/design/W8vL6iAoammK9XX3iNv7N2/Do-it)에 요구사항 명세서와 UI 설계서를 옮겨 두었습니다.
 
 | 페이지 | 내용 |
 | --- | --- |
