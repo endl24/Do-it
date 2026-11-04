@@ -15,7 +15,9 @@ import '../../widgets/sync_status_badge.dart';
 import '../../widgets/todo_card.dart';
 import '../home/todo_controller.dart';
 import '../todo_detail/todo_detail_screen.dart';
+import '../todo_quadrant/todo_quadrant_screen.dart';
 import 'todo_form_sheet.dart';
+import 'widgets/todo_view_switcher.dart';
 
 class TodoListScreen extends StatefulWidget {
   const TodoListScreen({super.key, this.repository, this.isOnline = true});
@@ -94,6 +96,13 @@ class _TodoListScreenState extends State<TodoListScreen> {
                     : '남은 할 일 ${_controller.incompleteCount}개',
                 trailing: _buildSyncBadge(),
               ),
+              TodoViewSwitcher(
+                selected: TodoViewMode.list,
+                onChanged: (mode) {
+                  if (mode == TodoViewMode.quadrant) _openQuadrant();
+                },
+              ),
+              const SizedBox(height: AppSpacing.xs),
               _FilterBar(
                 selected: _controller.filter,
                 onSelected: _controller.setFilter,
@@ -243,6 +252,14 @@ class _TodoListScreenState extends State<TodoListScreen> {
     _showResult(
       true,
       successMessage: todo.isCompleted ? '미완료로 변경했습니다.' : '할 일을 완료했습니다.',
+    );
+  }
+
+  Future<void> _openQuadrant() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => TodoQuadrantScreen(controller: _controller),
+      ),
     );
   }
 
