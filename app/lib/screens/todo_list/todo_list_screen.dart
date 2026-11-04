@@ -16,7 +16,9 @@ import '../../widgets/todo_card.dart';
 import '../home/todo_controller.dart';
 import '../home/widgets/empty_todo_view.dart';
 import '../todo_detail/todo_detail_screen.dart';
+import '../todo_quadrant/todo_quadrant_view.dart';
 import 'todo_form_sheet.dart';
+import 'widgets/todo_view_switcher.dart';
 
 class TodoListScreen extends StatefulWidget {
   const TodoListScreen({super.key, this.repository, this.isOnline = true});
@@ -33,6 +35,9 @@ class TodoListScreen extends StatefulWidget {
 class _TodoListScreenState extends State<TodoListScreen> {
   late final TodoController _controller;
   late final _retryBackoff = RetryBackoff(onRetry: _load);
+  var _viewMode = TodoViewMode.list;
+
+  bool get _isQuadrantMode => _viewMode == TodoViewMode.quadrant;
 
   @override
   void initState() {
@@ -82,7 +87,9 @@ class _TodoListScreenState extends State<TodoListScreen> {
 
   /// 불러오기까지 끝났는데 할 일이 한 건도 없는 02 빈 상태인지.
   /// 필터로 가려져 안 보이는 경우는 해당하지 않는다.
+  /// 사분면 보기에서는 전환 세그먼트를 유지하도록 네 영역의 '아직 없음'으로 보여준다.
   bool get _isEmptyState =>
+      !_isQuadrantMode &&
       !_controller.isLoading &&
       _controller.loadErrorMessage == null &&
       _controller.todos.isEmpty;
@@ -99,19 +106,28 @@ class _TodoListScreenState extends State<TodoListScreen> {
             child: Column(
               children: [
                 PageHeader(
-                  title: '할 일',
+                  title: _isQuadrantMode ? '사분면' : '할 일',
                   subtitle: isEmptyState
                       ? null
                       : _controller.isLoading
                       ? '저장된 할 일을 불러오는 중입니다'
+                      : _isQuadrantMode
+                      ? '중요도와 긴급도에 따라 할 일을 나눠 봅니다'
                       : '남은 할 일 ${_controller.incompleteCount}개',
                   trailing: _buildSyncBadge(),
                 ),
                 if (!isEmptyState)
+                  TodoViewSwitcher(
+                    selected: _viewMode,
+                    onChanged: (mode) => setState(() => _viewMode = mode),
+                  ),
+                if (!isEmptyState && !_isQuadrantMode) ...[
+                  const SizedBox(height: AppSpacing.xs),
                   _FilterBar(
                     selected: _controller.filter,
                     onSelected: _controller.setFilter,
                   ),
+                ],
                 if (!widget.isOnline)
                   const Padding(
                     padding: EdgeInsets.fromLTRB(
@@ -126,7 +142,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
               ],
             ),
           ),
-          floatingActionButton: isEmptyState
+          floatingActionButton: isEmptyState || _isQuadrantMode
               ? null
               : FloatingActionButton.extended(
                   onPressed: () => _openForm(),
@@ -162,6 +178,14 @@ class _TodoListScreenState extends State<TodoListScreen> {
           isSlowedDown: _retryBackoff.isSlowedDown,
           onRetry: _load,
         ),
+      );
+    }
+
+    if (_isQuadrantMode) {
+      return TodoQuadrantView(
+        todos: _controller.todos,
+        onOpenDetail: _openDetail,
+        onMove: _move,
       );
     }
 
@@ -273,6 +297,12 @@ class _TodoListScreenState extends State<TodoListScreen> {
       true,
       successMessage: result.todo.isCompleted ? '할 일을 완료했습니다.' : '미완료로 변경했습니다.',
     );
+  }
+
+  Future<void> _move(Todo todo, TodoQuadrant target) async {
+    final succeeded = await _controller.move(todo, target);
+    if (!mounted || succeeded) return;
+    _showResult(false, successMessage: '');
   }
 
   Future<void> _toggle(Todo todo) async {

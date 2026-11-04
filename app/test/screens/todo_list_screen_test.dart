@@ -337,6 +337,22 @@ void main() {
       expect((await repository.getAll()).single.title, '수정한 제목');
     });
   });
+
+  testWidgets('사분면 세그먼트를 누르면 사분면 보기로 바꾼다', (tester) async {
+    await _pumpScreen(
+      tester,
+      InMemoryTodoRepository([_todo(id: 'segment', title: '전환할 일')]),
+    );
+
+    await tester.tap(find.text('사분면'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('사분면'), findsNWidgets(2));
+    expect(find.text('지금 한다'), findsOneWidget);
+    expect(find.text('계획한다'), findsOneWidget);
+    expect(find.text('빨리 끝낸다'), findsOneWidget);
+    expect(find.text('미뤄둔다'), findsOneWidget);
+  });
 }
 
 class _LoadFailingTodoRepository extends InMemoryTodoRepository {
