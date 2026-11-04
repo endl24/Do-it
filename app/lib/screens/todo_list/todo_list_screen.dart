@@ -369,34 +369,37 @@ class _FilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenHorizontal,
-      ),
-      child: Row(
-        children: [
-          _FilterChip(
-            label: '전체',
-            value: TodoFilter.all,
-            selected: selected,
-            onSelected: onSelected,
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          _FilterChip(
-            label: '미완료',
-            value: TodoFilter.incomplete,
-            selected: selected,
-            onSelected: onSelected,
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          _FilterChip(
-            label: '완료',
-            value: TodoFilter.completed,
-            selected: selected,
-            onSelected: onSelected,
-          ),
-        ],
+    return SizedBox(
+      width: double.infinity,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenHorizontal,
+        ),
+        child: Row(
+          children: [
+            _FilterChip(
+              label: '전체',
+              value: TodoFilter.all,
+              selected: selected,
+              onSelected: onSelected,
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            _FilterChip(
+              label: '미완료',
+              value: TodoFilter.incomplete,
+              selected: selected,
+              onSelected: onSelected,
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            _FilterChip(
+              label: '완료',
+              value: TodoFilter.completed,
+              selected: selected,
+              onSelected: onSelected,
+            ),
+          ],
+        ),
       ),
     );
   }

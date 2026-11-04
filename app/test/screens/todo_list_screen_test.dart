@@ -1,3 +1,4 @@
+import 'package:do_it/core/theme/app_spacing.dart';
 import 'package:do_it/core/theme/app_theme.dart';
 import 'package:do_it/models/todo.dart';
 import 'package:do_it/screens/home/widgets/empty_todo_view.dart';
@@ -123,6 +124,16 @@ void main() {
 
     expect(find.text('과제 제출'), findsOneWidget);
     expect(find.text('완료', skipOffstage: false), findsNWidgets(2));
+  });
+
+  testWidgets('필터 칩은 화면 왼쪽 여백에 맞춰 시작한다', (tester) async {
+    await _pumpScreen(
+      tester,
+      InMemoryTodoRepository([_todo(id: 'chip', title: '과제 제출')]),
+    );
+
+    final firstChip = find.widgetWithText(ChoiceChip, '전체');
+    expect(tester.getTopLeft(firstChip).dx, AppSpacing.screenHorizontal);
   });
 
   testWidgets('할 일 카드를 누르면 상세 화면을 연다', (tester) async {
