@@ -10,7 +10,16 @@ import '../../widgets/grouped_card.dart';
 import '../../widgets/quadrant_tag.dart';
 import '../todo_list/todo_form_sheet.dart';
 
-enum TodoDetailResult { completed, deleted }
+enum TodoDetailAction { completionChanged, deleted }
+
+class TodoDetailResult {
+  const TodoDetailResult({required this.action, required this.todo});
+
+  final TodoDetailAction action;
+
+  /// 화면을 닫을 때의 최신 할 일. 상세에서 수정했을 수 있으므로 처음 넘긴 값 대신 이 값을 쓴다.
+  final Todo todo;
+}
 
 class TodoDetailScreen extends StatefulWidget {
   const TodoDetailScreen({
@@ -70,7 +79,12 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
       _showMessage('완료 상태를 변경하지 못했습니다.');
       return;
     }
-    Navigator.of(context).pop(TodoDetailResult.completed);
+    Navigator.of(context).pop(
+      TodoDetailResult(
+        action: TodoDetailAction.completionChanged,
+        todo: updated,
+      ),
+    );
   }
 
   Future<void> _delete() async {
@@ -85,7 +99,8 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
       _showMessage('할 일을 삭제하지 못했습니다.');
       return;
     }
-    Navigator.of(context).pop(TodoDetailResult.deleted);
+    Navigator.of(context)
+        .pop(TodoDetailResult(action: TodoDetailAction.deleted, todo: _todo));
   }
 
   void _showMessage(String message) {

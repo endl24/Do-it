@@ -14,8 +14,9 @@ import '../../widgets/skeleton_list.dart';
 import '../../widgets/sync_status_badge.dart';
 import '../../widgets/todo_card.dart';
 import '../home/todo_controller.dart';
+import '../home/widgets/empty_todo_view.dart';
 import '../todo_detail/todo_detail_screen.dart';
-import '../todo_quadrant/todo_quadrant_screen.dart';
+import '../todo_quadrant/todo_quadrant_view.dart';
 import 'todo_form_sheet.dart';
 import 'widgets/todo_view_switcher.dart';
 
@@ -34,6 +35,9 @@ class TodoListScreen extends StatefulWidget {
 class _TodoListScreenState extends State<TodoListScreen> {
   late final TodoController _controller;
   late final _retryBackoff = RetryBackoff(onRetry: _load);
+  var _viewMode = TodoViewMode.list;
+
+  bool get _isQuadrantMode => _viewMode == TodoViewMode.quadrant;
 
   @override
   void initState() {
@@ -81,52 +85,72 @@ class _TodoListScreenState extends State<TodoListScreen> {
     return SyncStatusBadge(pendingCount: pendingCount);
   }
 
+  /// 불러오기까지 끝났는데 할 일이 한 건도 없는 02 빈 상태인지.
+  /// 필터로 가려져 안 보이는 경우는 해당하지 않는다.
+  /// 사분면 보기에서는 전환 세그먼트를 유지하도록 네 영역의 '아직 없음'으로 보여준다.
+  bool get _isEmptyState =>
+      !_isQuadrantMode &&
+      !_controller.isLoading &&
+      _controller.loadErrorMessage == null &&
+      _controller.todos.isEmpty;
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, _) => Column(
-            children: [
-              PageHeader(
-                title: '할 일',
-                subtitle: _controller.isLoading
-                    ? '저장된 할 일을 불러오는 중입니다'
-                    : '남은 할 일 ${_controller.incompleteCount}개',
-                trailing: _buildSyncBadge(),
-              ),
-              TodoViewSwitcher(
-                selected: TodoViewMode.list,
-                onChanged: (mode) {
-                  if (mode == TodoViewMode.quadrant) _openQuadrant();
-                },
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              _FilterBar(
-                selected: _controller.filter,
-                onSelected: _controller.setFilter,
-              ),
-              if (!widget.isOnline)
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    AppSpacing.screenHorizontal,
-                    AppSpacing.sm,
-                    AppSpacing.screenHorizontal,
-                    0,
-                  ),
-                  child: OfflineBanner(),
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        // 02에서는 빈 상태의 두 버튼이 추가 진입을 맡으므로 필터·요약·FAB를 숨긴다.
+        final isEmptyState = _isEmptyState;
+        return Scaffold(
+          body: SafeArea(
+            child: Column(
+              children: [
+                PageHeader(
+                  title: _isQuadrantMode ? '사분면' : '할 일',
+                  subtitle: isEmptyState
+                      ? null
+                      : _controller.isLoading
+                      ? '저장된 할 일을 불러오는 중입니다'
+                      : _isQuadrantMode
+                      ? '중요도와 긴급도에 따라 할 일을 나눠 봅니다'
+                      : '남은 할 일 ${_controller.incompleteCount}개',
+                  trailing: _buildSyncBadge(),
                 ),
-              Expanded(child: _buildBody()),
-            ],
+                if (!isEmptyState)
+                  TodoViewSwitcher(
+                    selected: _viewMode,
+                    onChanged: (mode) => setState(() => _viewMode = mode),
+                  ),
+                if (!isEmptyState && !_isQuadrantMode) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  _FilterBar(
+                    selected: _controller.filter,
+                    onSelected: _controller.setFilter,
+                  ),
+                ],
+                if (!widget.isOnline)
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      AppSpacing.screenHorizontal,
+                      AppSpacing.sm,
+                      AppSpacing.screenHorizontal,
+                      0,
+                    ),
+                    child: OfflineBanner(),
+                  ),
+                Expanded(child: _buildBody()),
+              ],
+            ),
           ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openForm(),
-        icon: const Icon(Icons.add),
-        label: const Text('할 일 추가'),
-      ),
+          floatingActionButton: isEmptyState || _isQuadrantMode
+              ? null
+              : FloatingActionButton.extended(
+                  onPressed: () => _openForm(),
+                  icon: const Icon(Icons.add),
+                  label: const Text('할 일 추가'),
+                ),
+        );
+      },
     );
   }
 
@@ -157,6 +181,18 @@ class _TodoListScreenState extends State<TodoListScreen> {
       );
     }
 
+    if (_isQuadrantMode) {
+      return TodoQuadrantView(
+        todos: _controller.todos,
+        onOpenDetail: _openDetail,
+        onMove: _move,
+      );
+    }
+
+    if (_controller.todos.isEmpty) {
+      return EmptyTodoView(onAdd: _addFirstTodo, onPhoto: _showPhotoComingSoon);
+    }
+
     final todos = _controller.visibleTodos;
     if (todos.isEmpty) {
       return Padding(
@@ -167,15 +203,9 @@ class _TodoListScreenState extends State<TodoListScreen> {
           AppSpacing.xxl + AppSize.fab,
         ),
         child: Center(
-          child: _controller.todos.isEmpty
-              ? const EmptyPlaceholder(
-                  icon: Icons.checklist_rounded,
-                  message: '아직 등록한 할 일이 없어요',
-                  description: '오른쪽 아래 버튼을 눌러 첫 할 일을 등록해 보세요.',
-                )
-              : EmptyPlaceholder.filtered(
-                  onResetFilter: () => _controller.setFilter(TodoFilter.all),
-                ),
+          child: EmptyPlaceholder.filtered(
+            onResetFilter: () => _controller.setFilter(TodoFilter.all),
+          ),
         ),
       );
     }
@@ -210,6 +240,20 @@ class _TodoListScreenState extends State<TodoListScreen> {
     );
   }
 
+  /// 02에서는 필터가 보이지 않으므로, '완료' 필터에서 마지막 할 일을 지운 뒤 새로 추가해도
+  /// 새 할 일이 필터에 가려지지 않게 전체로 되돌린다.
+  void _addFirstTodo() {
+    _controller.setFilter(TodoFilter.all);
+    _openForm();
+  }
+
+  // TODO(강두이): 카메라·글자 인식 구현체가 생기면 MemoCaptureScreen.open으로 바꾼다.
+  void _showPhotoComingSoon() {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(const SnackBar(content: Text('사진에서 가져오기는 아직 준비 중입니다.')));
+  }
+
   Future<void> _openForm([Todo? todo]) async {
     final result = await showTodoFormSheet(context, todo: todo);
     if (!mounted || result == null) return;
@@ -241,26 +285,24 @@ class _TodoListScreenState extends State<TodoListScreen> {
       ),
     );
     if (!mounted || result == null) return;
-    if (result == TodoDetailResult.deleted) {
+    if (result.action == TodoDetailAction.deleted) {
       showUndoSnackBar(
         context,
         message: '할 일을 삭제했습니다',
-        onUndo: () => _restore(todo),
+        onUndo: () => _restore(result.todo),
       );
       return;
     }
     _showResult(
       true,
-      successMessage: todo.isCompleted ? '미완료로 변경했습니다.' : '할 일을 완료했습니다.',
+      successMessage: result.todo.isCompleted ? '할 일을 완료했습니다.' : '미완료로 변경했습니다.',
     );
   }
 
-  Future<void> _openQuadrant() async {
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (_) => TodoQuadrantScreen(controller: _controller),
-      ),
-    );
+  Future<void> _move(Todo todo, TodoQuadrant target) async {
+    final succeeded = await _controller.move(todo, target);
+    if (!mounted || succeeded) return;
+    _showResult(false, successMessage: '');
   }
 
   Future<void> _toggle(Todo todo) async {

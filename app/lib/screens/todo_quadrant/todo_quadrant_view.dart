@@ -4,92 +4,81 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../models/todo.dart';
-import '../../widgets/page_header.dart';
-import '../../widgets/todo_card.dart';
-import '../home/todo_controller.dart';
-import '../todo_detail/todo_detail_screen.dart';
-import '../todo_list/widgets/todo_view_switcher.dart';
+import '../../widgets/sync_status_badge.dart';
 
-class TodoQuadrantScreen extends StatelessWidget {
-  const TodoQuadrantScreen({required this.controller, super.key});
+/// 05 사분면 조회. 하단 탭이 유지되도록 01 할 일 탭 안에서 목록 대신 보여준다.
+class TodoQuadrantView extends StatelessWidget {
+  const TodoQuadrantView({
+    required this.todos,
+    required this.onOpenDetail,
+    required this.onMove,
+    super.key,
+  });
 
-  final TodoController controller;
+  final List<Todo> todos;
+  final ValueChanged<Todo> onOpenDetail;
+  final void Function(Todo todo, TodoQuadrant target) onMove;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: AnimatedBuilder(
-          animation: controller,
-          builder: (context, _) => Column(
-            children: [
-              const PageHeader(
-                title: '사분면',
-                subtitle: '중요도와 긴급도에 따라 할 일을 나눠 봅니다',
-              ),
-              TodoViewSwitcher(
-                selected: TodoViewMode.quadrant,
-                onChanged: (mode) {
-                  if (mode == TodoViewMode.list) Navigator.of(context).pop();
-                },
-              ),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(
-                  AppSpacing.screenHorizontal,
-                  AppSpacing.sm,
-                  AppSpacing.screenHorizontal,
-                  AppSpacing.sm,
-                ),
-                child: _MoveGuide(),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.screenHorizontal,
-                    0,
-                    AppSpacing.screenHorizontal,
-                    AppSpacing.md,
-                  ),
-                  child: _QuadrantGrid(
-                    controller: controller,
-                    onOpenDetail: (todo) => _openDetail(context, todo),
-                    onMoveFailed: () => _showMessage(
-                      context,
-                      controller.errorMessage ?? '분류를 변경하지 못했습니다.',
-                    ),
+    return Column(
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.screenHorizontal,
+            AppSpacing.sm,
+            AppSpacing.screenHorizontal,
+            AppSpacing.sm,
+          ),
+          child: _MoveGuide(),
+        ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenHorizontal,
+              0,
+              AppSpacing.screenHorizontal,
+              AppSpacing.md,
+            ),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(child: _area(TodoQuadrant.doNow)),
+                      const SizedBox(width: AppSpacing.xs),
+                      Expanded(child: _area(TodoQuadrant.schedule)),
+                    ],
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: AppSpacing.xs),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(child: _area(TodoQuadrant.delegate)),
+                      const SizedBox(width: AppSpacing.xs),
+                      Expanded(child: _area(TodoQuadrant.eliminate)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 
-  Future<void> _openDetail(BuildContext context, Todo todo) async {
-    final result = await Navigator.of(context).push<TodoDetailResult>(
-      MaterialPageRoute(
-        builder: (_) => TodoDetailScreen(
-          todo: todo,
-          onUpdate: controller.update,
-          onDelete: controller.remove,
-        ),
-      ),
+  Widget _area(TodoQuadrant quadrant) {
+    return _QuadrantArea(
+      key: ValueKey('quadrant-${quadrant.name}'),
+      quadrant: quadrant,
+      todos: todos
+          .where((todo) => todo.quadrant == quadrant)
+          .toList(growable: false),
+      onOpenDetail: onOpenDetail,
+      onMove: (todo) => onMove(todo, quadrant),
     );
-    if (!context.mounted || result == null) return;
-    final message = switch (result) {
-      TodoDetailResult.completed =>
-        todo.isCompleted ? '미완료로 변경했습니다.' : '할 일을 완료했습니다.',
-      TodoDetailResult.deleted => '할 일을 삭제했습니다.',
-    };
-    _showMessage(context, message);
-  }
-
-  void _showMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -126,60 +115,6 @@ class _MoveGuide extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _QuadrantGrid extends StatelessWidget {
-  const _QuadrantGrid({
-    required this.controller,
-    required this.onOpenDetail,
-    required this.onMoveFailed,
-  });
-
-  final TodoController controller;
-  final ValueChanged<Todo> onOpenDetail;
-  final VoidCallback onMoveFailed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: Row(
-            children: [
-              Expanded(child: _area(TodoQuadrant.doNow)),
-              const SizedBox(width: AppSpacing.xs),
-              Expanded(child: _area(TodoQuadrant.schedule)),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Expanded(
-          child: Row(
-            children: [
-              Expanded(child: _area(TodoQuadrant.delegate)),
-              const SizedBox(width: AppSpacing.xs),
-              Expanded(child: _area(TodoQuadrant.eliminate)),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _area(TodoQuadrant quadrant) {
-    final todos = controller.todos
-        .where((todo) => todo.quadrant == quadrant)
-        .toList(growable: false);
-    return _QuadrantArea(
-      key: ValueKey('quadrant-${quadrant.name}'),
-      quadrant: quadrant,
-      todos: todos,
-      onOpenDetail: onOpenDetail,
-      onMove: (todo) async {
-        if (!await controller.move(todo, quadrant)) onMoveFailed();
-      },
     );
   }
 }
@@ -270,14 +205,17 @@ class _QuadrantArea extends StatelessWidget {
                               color: Colors.transparent,
                               child: SizedBox(
                                 width: 180,
-                                child: _card(todo, onTap: null),
+                                child: _QuadrantCard(todo: todo),
                               ),
                             ),
                             childWhenDragging: Opacity(
                               opacity: 0.35,
-                              child: _card(todo, onTap: null),
+                              child: _QuadrantCard(todo: todo),
                             ),
-                            child: _card(todo, onTap: () => onOpenDetail(todo)),
+                            child: _QuadrantCard(
+                              todo: todo,
+                              onTap: () => onOpenDetail(todo),
+                            ),
                           );
                         },
                       ),
@@ -286,17 +224,6 @@ class _QuadrantArea extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-
-  Widget _card(Todo todo, {required VoidCallback? onTap}) {
-    return TodoCard(
-      title: todo.title,
-      isImportant: todo.isImportant,
-      isUrgent: todo.isUrgent,
-      isDone: todo.isCompleted,
-      isPendingSync: todo.syncStatus == TodoSyncStatus.pending,
-      onTap: onTap,
     );
   }
 
@@ -309,4 +236,54 @@ class _QuadrantArea extends StatelessWidget {
     TodoQuadrant.doNow || TodoQuadrant.delegate => true,
     TodoQuadrant.schedule || TodoQuadrant.eliminate => false,
   };
+}
+
+/// 영역 칸이 좁아 제목만 보여준다. 분류는 영역이 이미 알려 주므로 태그가 필요 없다.
+class _QuadrantCard extends StatelessWidget {
+  const _QuadrantCard({required this.todo, this.onTap});
+
+  final Todo todo;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: todo.isCompleted ? AppColors.surfaceSubtle : null,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  todo.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.fieldLabel.copyWith(
+                    color: todo.isCompleted
+                        ? AppColors.textTertiary
+                        : AppColors.textPrimary,
+                    decoration: todo.isCompleted
+                        ? TextDecoration.lineThrough
+                        : null,
+                    decorationColor: AppColors.textTertiary,
+                  ),
+                ),
+              ),
+              if (todo.syncStatus == TodoSyncStatus.pending) ...[
+                const SizedBox(width: AppSpacing.xs),
+                const Padding(
+                  padding: EdgeInsets.only(top: AppSpacing.xxs),
+                  child: StatusDot(color: AppColors.warning),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
