@@ -51,6 +51,19 @@ void main() {
     expect(find.text('완료', skipOffstage: false), findsNWidgets(2));
   });
 
+  testWidgets('할 일 카드를 누르면 상세 화면을 연다', (tester) async {
+    final todo = _todo(id: 'detail', title: '상세에서 확인할 일');
+    await _pumpScreen(tester, InMemoryTodoRepository([todo]));
+
+    await tester.tap(find.text('상세에서 확인할 일'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('할 일 상세'), findsOneWidget);
+    expect(find.text('수정'), findsOneWidget);
+    expect(find.text('완료로 표시'), findsOneWidget);
+    expect(find.text('삭제'), findsOneWidget);
+  });
+
   testWidgets('빈 목록에서 저장에 실패하면 빈 상태를 유지하고 안내만 띄운다', (tester) async {
     await _pumpScreen(tester, _SaveFailingTodoRepository());
 
@@ -154,7 +167,7 @@ void main() {
     Future<void> deleteTodo(WidgetTester tester, String title) async {
       await tester.tap(find.text(title));
       await tester.pumpAndSettle();
-      final deleteButton = find.text('할 일 삭제');
+      final deleteButton = find.widgetWithText(OutlinedButton, '삭제');
       await tester.ensureVisible(deleteButton);
       await tester.pumpAndSettle();
       await tester.tap(deleteButton);
