@@ -60,10 +60,7 @@ void main() {
 
       await tester.tap(find.text('마지막 할 일'));
       await tester.pumpAndSettle();
-      final deleteButton = find.text('할 일 삭제');
-      await tester.ensureVisible(deleteButton);
-      await tester.pumpAndSettle();
-      await tester.tap(deleteButton);
+      await tester.tap(find.widgetWithText(OutlinedButton, '삭제'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, '삭제'));
       await tester.pumpAndSettle();
@@ -126,6 +123,42 @@ void main() {
 
     expect(find.text('과제 제출'), findsOneWidget);
     expect(find.text('완료', skipOffstage: false), findsNWidgets(2));
+  });
+
+  testWidgets('할 일 카드를 누르면 상세 화면을 연다', (tester) async {
+    final todo = _todo(id: 'detail', title: '상세에서 확인할 일');
+    await _pumpScreen(tester, InMemoryTodoRepository([todo]));
+
+    await tester.tap(find.text('상세에서 확인할 일'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('할 일 상세'), findsOneWidget);
+    expect(find.text('수정'), findsOneWidget);
+    expect(find.text('완료로 표시'), findsOneWidget);
+    expect(find.text('삭제'), findsOneWidget);
+  });
+
+  testWidgets('상세에서 완료 상태를 바꾸면 목록에 바뀐 상태를 안내한다', (tester) async {
+    final repository = InMemoryTodoRepository([
+      _todo(id: 'toggle', title: '상태를 바꿀 일'),
+    ]);
+    await _pumpScreen(tester, repository);
+
+    await tester.tap(find.text('상태를 바꿀 일'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('완료로 표시'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('할 일을 완료했습니다.'), findsOneWidget);
+    expect((await repository.getAll()).single.isCompleted, isTrue);
+
+    await tester.tap(find.text('상태를 바꿀 일'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('미완료로 표시'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('미완료로 변경했습니다.'), findsOneWidget);
+    expect((await repository.getAll()).single.isCompleted, isFalse);
   });
 
   testWidgets('빈 목록에서 저장에 실패하면 빈 상태를 유지하고 안내만 띄운다', (tester) async {
@@ -224,7 +257,7 @@ void main() {
     Future<void> deleteTodo(WidgetTester tester, String title) async {
       await tester.tap(find.text(title));
       await tester.pumpAndSettle();
-      final deleteButton = find.text('할 일 삭제');
+      final deleteButton = find.widgetWithText(OutlinedButton, '삭제');
       await tester.ensureVisible(deleteButton);
       await tester.pumpAndSettle();
       await tester.tap(deleteButton);
@@ -274,6 +307,34 @@ void main() {
 
       expect(find.text('스터디 발표 자료 정리'), findsOneWidget);
       expect((await repository.getAll()).single.id, 'undo');
+    });
+
+    testWidgets('상세에서 수정한 뒤 삭제하고 실행 취소하면 수정한 내용으로 되살린다', (tester) async {
+      final repository = InMemoryTodoRepository([
+        _todo(id: 'edited', title: '원래 제목'),
+      ]);
+      await _pumpScreen(tester, repository);
+
+      await tester.tap(find.text('원래 제목'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('수정'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextFormField), '수정한 제목');
+      final saveButton = find.widgetWithText(FilledButton, '저장');
+      await tester.ensureVisible(saveButton);
+      await tester.pumpAndSettle();
+      await tester.tap(saveButton);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(OutlinedButton, '삭제'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, '삭제'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('실행 취소'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('수정한 제목'), findsOneWidget);
+      expect((await repository.getAll()).single.title, '수정한 제목');
     });
   });
 }

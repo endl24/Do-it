@@ -15,6 +15,7 @@ import '../../widgets/sync_status_badge.dart';
 import '../../widgets/todo_card.dart';
 import '../home/todo_controller.dart';
 import '../home/widgets/empty_todo_view.dart';
+import '../todo_detail/todo_detail_screen.dart';
 import 'todo_form_sheet.dart';
 
 class TodoListScreen extends StatefulWidget {
@@ -208,7 +209,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
             isMetaEmphasized: _isDueToday(todo.dueDate),
             isPendingSync: todo.syncStatus == TodoSyncStatus.pending,
             onDoneChanged: (_) => _toggle(todo),
-            onTap: () => _openForm(todo),
+            onTap: () => _openDetail(todo),
           );
         },
       ),
@@ -246,6 +247,31 @@ class _TodoListScreenState extends State<TodoListScreen> {
     _showResult(
       succeeded,
       successMessage: todo == null ? '할 일을 추가했습니다.' : '할 일을 수정했습니다.',
+    );
+  }
+
+  Future<void> _openDetail(Todo todo) async {
+    final result = await Navigator.of(context).push<TodoDetailResult>(
+      MaterialPageRoute(
+        builder: (_) => TodoDetailScreen(
+          todo: todo,
+          onUpdate: _controller.update,
+          onDelete: _controller.remove,
+        ),
+      ),
+    );
+    if (!mounted || result == null) return;
+    if (result.action == TodoDetailAction.deleted) {
+      showUndoSnackBar(
+        context,
+        message: '할 일을 삭제했습니다',
+        onUndo: () => _restore(result.todo),
+      );
+      return;
+    }
+    _showResult(
+      true,
+      successMessage: result.todo.isCompleted ? '할 일을 완료했습니다.' : '미완료로 변경했습니다.',
     );
   }
 
