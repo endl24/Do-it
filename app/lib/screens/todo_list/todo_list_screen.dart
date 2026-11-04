@@ -10,6 +10,7 @@ import '../../widgets/empty_placeholder.dart';
 import '../../widgets/page_header.dart';
 import '../../widgets/todo_card.dart';
 import '../home/todo_controller.dart';
+import '../todo_detail/todo_detail_screen.dart';
 import 'todo_form_sheet.dart';
 
 class TodoListScreen extends StatefulWidget {
@@ -27,9 +28,8 @@ class _TodoListScreenState extends State<TodoListScreen> {
   @override
   void initState() {
     super.initState();
-    _controller = TodoController(
-      widget.repository ?? SqliteTodoRepository(),
-    )..load();
+    _controller = TodoController(widget.repository ?? SqliteTodoRepository())
+      ..load();
   }
 
   @override
@@ -125,7 +125,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
             isMetaEmphasized: _isDueToday(todo.dueDate),
             isPendingSync: todo.syncStatus == TodoSyncStatus.pending,
             onDoneChanged: (_) => _toggle(todo),
-            onTap: () => _openForm(todo),
+            onTap: () => _openDetail(todo),
           );
         },
       ),
@@ -150,6 +150,25 @@ class _TodoListScreenState extends State<TodoListScreen> {
       succeeded,
       successMessage: todo == null ? '할 일을 추가했습니다.' : '할 일을 수정했습니다.',
     );
+  }
+
+  Future<void> _openDetail(Todo todo) async {
+    final result = await Navigator.of(context).push<TodoDetailResult>(
+      MaterialPageRoute(
+        builder: (_) => TodoDetailScreen(
+          todo: todo,
+          onUpdate: _controller.update,
+          onDelete: _controller.remove,
+        ),
+      ),
+    );
+    if (!mounted || result == null) return;
+    final message = switch (result) {
+      TodoDetailResult.completed =>
+        todo.isCompleted ? '미완료로 변경했습니다.' : '할 일을 완료했습니다.',
+      TodoDetailResult.deleted => '할 일을 삭제했습니다.',
+    };
+    _showResult(true, successMessage: message);
   }
 
   Future<void> _toggle(Todo todo) async {
@@ -280,7 +299,9 @@ class _ErrorView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+              style: AppTextStyles.body.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
             const SizedBox(height: AppSpacing.md),
             OutlinedButton(onPressed: onRetry, child: const Text('다시 시도')),

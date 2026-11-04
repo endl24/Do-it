@@ -47,12 +47,22 @@ void main() {
     expect(find.text('과제 제출'), findsOneWidget);
     expect(find.text('완료', skipOffstage: false), findsNWidgets(2));
   });
+
+  testWidgets('할 일 카드를 누르면 상세 화면을 연다', (tester) async {
+    final todo = _todo(id: 'detail', title: '상세에서 확인할 일');
+    await _pumpScreen(tester, InMemoryTodoRepository([todo]));
+
+    await tester.tap(find.text('상세에서 확인할 일'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('할 일 상세'), findsOneWidget);
+    expect(find.text('수정'), findsOneWidget);
+    expect(find.text('완료로 표시'), findsOneWidget);
+    expect(find.text('삭제'), findsOneWidget);
+  });
 }
 
-Future<void> _pumpScreen(
-  WidgetTester tester,
-  TodoRepository repository,
-) async {
+Future<void> _pumpScreen(WidgetTester tester, TodoRepository repository) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: AppTheme.light,
