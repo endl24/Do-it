@@ -1,5 +1,6 @@
 import 'package:do_it/core/theme/app_theme.dart';
 import 'package:do_it/models/todo.dart';
+import 'package:do_it/screens/home/widgets/empty_todo_view.dart';
 import 'package:do_it/screens/todo_list/todo_list_screen.dart';
 import 'package:do_it/services/todo_repository.dart';
 import 'package:do_it/widgets/error_retry_card.dart';
@@ -9,25 +10,98 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('저장된 할 일이 없으면 빈 상태를 표시한다', (tester) async {
-    await _pumpScreen(tester, InMemoryTodoRepository());
+  group('02 빈 상태', () {
+    testWidgets('할 일이 0건이면 두 버튼만 보여주고 필터·요약·FAB는 숨긴다', (tester) async {
+      await _pumpScreen(tester, InMemoryTodoRepository());
 
-    expect(find.text('아직 등록한 할 일이 없어요'), findsOneWidget);
-    expect(find.text('남은 할 일 0개'), findsOneWidget);
+      expect(find.byType(EmptyTodoView), findsOneWidget);
+      expect(find.text('아직 등록한 할 일이 없어요'), findsOneWidget);
+      expect(find.text('할 일 직접 추가'), findsOneWidget);
+      expect(find.text('사진에서 가져오기'), findsOneWidget);
+      expect(find.byType(ChoiceChip), findsNothing);
+      expect(find.text('남은 할 일 0개'), findsNothing);
+      expect(find.byType(FloatingActionButton), findsNothing);
+    });
+
+    testWidgets('[할 일 직접 추가]로 등록하면 목록·필터·FAB로 돌아간다', (tester) async {
+      final repository = InMemoryTodoRepository();
+      await _pumpScreen(tester, repository);
+
+      await _addTodoFromEmptyState(tester, '첫 할 일');
+
+      expect(find.byType(EmptyTodoView), findsNothing);
+      expect(find.text('첫 할 일'), findsOneWidget);
+      expect(find.text('남은 할 일 1개'), findsOneWidget);
+      expect(find.byType(ChoiceChip), findsNWidgets(3));
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+      expect((await repository.getAll()).single.title, '첫 할 일');
+    });
+
+    testWidgets('[사진에서 가져오기]는 준비 중이라고 안내하고 화면을 바꾸지 않는다', (tester) async {
+      await _pumpScreen(tester, InMemoryTodoRepository());
+
+      await tester.tap(find.text('사진에서 가져오기'));
+      await tester.pump();
+
+      expect(find.text('사진에서 가져오기는 아직 준비 중입니다.'), findsOneWidget);
+      expect(find.byType(EmptyTodoView), findsOneWidget);
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+    });
+
+    testWidgets('완료 필터에서 마지막 할 일을 지우고 추가해도 새 할 일이 보인다', (tester) async {
+      final repository = InMemoryTodoRepository([
+        _todo(id: 'last', title: '마지막 할 일'),
+      ]);
+      await _pumpScreen(tester, repository);
+      await tester.tap(find.byType(Checkbox));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ChoiceChip, '완료'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('마지막 할 일'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(OutlinedButton, '삭제'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, '삭제'));
+      await tester.pumpAndSettle();
+      expect(find.byType(EmptyTodoView), findsOneWidget);
+
+      await _addTodoFromEmptyState(tester, '새 할 일');
+
+      expect(find.text('새 할 일'), findsOneWidget);
+    });
+
+    testWidgets('작은 화면에서도 넘치지 않고 스크롤해 버튼에 닿을 수 있다', (tester) async {
+      tester.view.physicalSize = const Size(320, 480);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await _pumpScreen(tester, InMemoryTodoRepository());
+
+      expect(tester.takeException(), isNull);
+      final photoButton = find.text('사진에서 가져오기');
+      await tester.ensureVisible(photoButton);
+      await tester.pumpAndSettle();
+      await tester.tap(photoButton);
+      await tester.pump();
+      expect(find.text('사진에서 가져오기는 아직 준비 중입니다.'), findsOneWidget);
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+    });
+
+    testWidgets('불러오기에 실패하면 빈 상태 대신 오류 카드를 보여준다', (tester) async {
+      await _pumpScreen(tester, _LoadFailingTodoRepository(failuresLeft: 1));
+
+      expect(find.byType(EmptyTodoView), findsNothing);
+      expect(find.byType(ErrorRetryCard), findsOneWidget);
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+    });
   });
 
   testWidgets('폼에서 할 일을 등록하면 목록과 저장소에 반영한다', (tester) async {
     final repository = InMemoryTodoRepository();
     await _pumpScreen(tester, repository);
 
-    await tester.tap(find.text('할 일 추가'));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextFormField), '발표 자료 정리');
-    final addButton = find.widgetWithText(FilledButton, '추가');
-    await tester.ensureVisible(addButton);
-    await tester.pumpAndSettle();
-    await tester.tap(addButton);
-    await tester.pumpAndSettle();
+    await _addTodoFromEmptyState(tester, '발표 자료 정리');
 
     expect(find.text('발표 자료 정리'), findsOneWidget);
     expect(find.text('남은 할 일 1개'), findsOneWidget);
@@ -64,17 +138,33 @@ void main() {
     expect(find.text('삭제'), findsOneWidget);
   });
 
+  testWidgets('상세에서 완료 상태를 바꾸면 목록에 바뀐 상태를 안내한다', (tester) async {
+    final repository = InMemoryTodoRepository([
+      _todo(id: 'toggle', title: '상태를 바꿀 일'),
+    ]);
+    await _pumpScreen(tester, repository);
+
+    await tester.tap(find.text('상태를 바꿀 일'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('완료로 표시'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('할 일을 완료했습니다.'), findsOneWidget);
+    expect((await repository.getAll()).single.isCompleted, isTrue);
+
+    await tester.tap(find.text('상태를 바꿀 일'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('미완료로 표시'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('미완료로 변경했습니다.'), findsOneWidget);
+    expect((await repository.getAll()).single.isCompleted, isFalse);
+  });
+
   testWidgets('빈 목록에서 저장에 실패하면 빈 상태를 유지하고 안내만 띄운다', (tester) async {
     await _pumpScreen(tester, _SaveFailingTodoRepository());
 
-    await tester.tap(find.text('할 일 추가'));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextFormField), '저장 실패');
-    final addButton = find.widgetWithText(FilledButton, '추가');
-    await tester.ensureVisible(addButton);
-    await tester.pumpAndSettle();
-    await tester.tap(addButton);
-    await tester.pumpAndSettle();
+    await _addTodoFromEmptyState(tester, '저장 실패');
 
     expect(find.text('기기에 저장하지 못했습니다. 저장 공간을 확인해 주세요.'), findsOneWidget);
     expect(find.text('아직 등록한 할 일이 없어요'), findsOneWidget);
@@ -218,6 +308,34 @@ void main() {
       expect(find.text('스터디 발표 자료 정리'), findsOneWidget);
       expect((await repository.getAll()).single.id, 'undo');
     });
+
+    testWidgets('상세에서 수정한 뒤 삭제하고 실행 취소하면 수정한 내용으로 되살린다', (tester) async {
+      final repository = InMemoryTodoRepository([
+        _todo(id: 'edited', title: '원래 제목'),
+      ]);
+      await _pumpScreen(tester, repository);
+
+      await tester.tap(find.text('원래 제목'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('수정'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextFormField), '수정한 제목');
+      final saveButton = find.widgetWithText(FilledButton, '저장');
+      await tester.ensureVisible(saveButton);
+      await tester.pumpAndSettle();
+      await tester.tap(saveButton);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(OutlinedButton, '삭제'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, '삭제'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('실행 취소'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('수정한 제목'), findsOneWidget);
+      expect((await repository.getAll()).single.title, '수정한 제목');
+    });
   });
 }
 
@@ -242,6 +360,18 @@ class _LoadFailingTodoRepository extends InMemoryTodoRepository {
 class _SaveFailingTodoRepository extends InMemoryTodoRepository {
   @override
   Future<void> save(Todo todo) => throw Exception('save failed');
+}
+
+/// 02의 [할 일 직접 추가]로 03을 열어 제목만 입력하고 등록한다.
+Future<void> _addTodoFromEmptyState(WidgetTester tester, String title) async {
+  await tester.tap(find.text('할 일 직접 추가'));
+  await tester.pumpAndSettle();
+  await tester.enterText(find.byType(TextFormField), title);
+  final addButton = find.widgetWithText(FilledButton, '추가');
+  await tester.ensureVisible(addButton);
+  await tester.pumpAndSettle();
+  await tester.tap(addButton);
+  await tester.pumpAndSettle();
 }
 
 Future<void> _pumpScreen(
