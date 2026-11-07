@@ -11,6 +11,7 @@ doc/api/
 
 # dotenv environment variables file
 .env*
+!.env.example
 
 .flutter-plugins
 .flutter-plugins-dependencies
@@ -26,3 +27,4 @@ doc/api/
 key.properties
 google-services.json
 GoogleService-Info.plist
+firebase_options.dart
