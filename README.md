@@ -105,7 +105,7 @@ flutter run
 ## 폴더 구조
 ```
 app/lib/
-├── main.dart           # 앱 시작점 (runApp만)
+├── main.dart           # 앱 시작점 (Firebase 초기화 후 runApp)
 ├── app.dart            # MaterialApp, 테마, 라우팅
 ├── core/
 │   ├── constants/      # 상수 (색상 코드, 문자열, 키 값 등)
