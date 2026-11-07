@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../calendar/calendar_screen.dart';
-import '../settings/settings_screen.dart';
+import '../settings/account_settings_screen.dart';
 import '../team/team_screen.dart';
 import '../todo_list/todo_list_screen.dart';
 
@@ -26,7 +26,11 @@ class _MainScreenState extends State<MainScreen> {
       screen: CalendarScreen(),
     ),
     _Tab(label: '팀', icon: Icons.group_outlined, screen: TeamScreen()),
-    _Tab(label: '설정', icon: Icons.settings_outlined, screen: SettingsScreen()),
+    _Tab(
+      label: '설정',
+      icon: Icons.settings_outlined,
+      screen: AccountSettingsScreen(),
+    ),
   ];
 
   var _selectedIndex = 0;

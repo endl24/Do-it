@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_spacing.dart';
+import '../../services/account_service.dart';
 import '../../services/permission_service.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/error_retry_card.dart';
@@ -15,23 +16,27 @@ class SettingsScreen extends StatefulWidget {
     super.key,
     this.nickname = '사용자',
     this.isLinked = false,
+    this.accountEmail,
     this.pendingCount = 0,
     this.notifications = const NotificationSettings(),
     this.permissionService,
     this.onSaveNickname,
     this.onNotificationsChanged,
     this.onLinkAccount,
+    this.onAuthenticate,
     this.onLogout,
     this.onDeleteAccount,
   }) : assert(pendingCount >= 0);
   final String nickname;
   final bool isLinked;
+  final String? accountEmail;
   final int pendingCount;
   final NotificationSettings notifications;
   final PermissionService? permissionService;
   final Future<void> Function(String)? onSaveNickname;
   final ValueChanged<NotificationSettings>? onNotificationsChanged;
   final Future<void> Function()? onLinkAccount;
+  final Future<bool> Function()? onAuthenticate;
   final Future<void> Function()? onLogout;
   final Future<void> Function()? onDeleteAccount;
   @override
@@ -144,6 +149,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       await action();
       if (mounted) setState(success);
+    } on AccountFailure catch (error) {
+      if (mounted) setState(() => _error = error.message);
     } catch (_) {
       if (mounted) {
         setState(() => _error = '요청을 처리하지 못했습니다. 연결 상태를 확인하고 다시 시도해 주세요.');
@@ -171,6 +178,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _isLinked = false;
       _message(isDeleting ? '회원 탈퇴했습니다' : '로그아웃했습니다');
     });
+  }
+
+  // 실제 인증 화면의 취소는 연동 성공으로 처리하지 않고 기존 미리보기 콜백도 유지한다.
+  Future<void> _linkAccount() async {
+    var isAuthenticated = widget.onAuthenticate == null;
+    await _run(
+      widget.onAuthenticate == null
+          ? widget.onLinkAccount
+          : () async {
+              isAuthenticated = await widget.onAuthenticate!();
+            },
+      () {
+        if (!isAuthenticated) return;
+        _isLinked = true;
+        _message('계정을 연동했습니다');
+      },
+    );
   }
 
   Future<void> _openNotifications() async {
@@ -241,18 +265,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     focus: _focus,
                     isBusy: _isBusy,
                     isLinked: _isLinked,
+                    accountEmail: widget.accountEmail,
                     pendingCount: widget.pendingCount,
                     notifications: _notifications,
                     permissions: _permissions,
                     onNameChanged: (_) => setState(() => _error = null),
                     onNotifications: _isBusy ? null : _openNotifications,
                     onPermissions: _isBusy ? null : _openPermissions,
-                    onLink: _isBusy || _isLinked
-                        ? null
-                        : () => _run(widget.onLinkAccount, () {
-                            _isLinked = true;
-                            _message('계정을 연동했습니다');
-                          }),
+                    onLink: _isBusy || _isLinked ? null : _linkAccount,
                     onLogout: _isBusy || !_isLinked
                         ? null
                         : () => _accountAction(isDeleting: false),

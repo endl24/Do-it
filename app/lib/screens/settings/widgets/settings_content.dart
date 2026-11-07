@@ -18,6 +18,7 @@ class SettingsContent extends StatelessWidget {
     required this.focus,
     required this.isBusy,
     required this.isLinked,
+    this.accountEmail,
     required this.pendingCount,
     required this.notifications,
     required this.permissions,
@@ -33,6 +34,7 @@ class SettingsContent extends StatelessWidget {
   final FocusNode focus;
   final bool isBusy;
   final bool isLinked;
+  final String? accountEmail;
   final int pendingCount;
   final NotificationSettings notifications;
   final String permissions;
@@ -81,7 +83,9 @@ class SettingsContent extends StatelessWidget {
           LabelValueRow(
             label: '계정 연동',
             value: isLinked ? '연동됨' : '연동하기',
-            description: '다른 기기에서도 같은 할 일을 이어서 사용',
+            description: isLinked && accountEmail != null
+                ? accountEmail
+                : '다른 기기에서도 같은 할 일을 이어서 사용',
             onTap: onLink,
           ),
           LabelValueRow(label: '로그아웃', onTap: onLogout),
