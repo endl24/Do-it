@@ -5,7 +5,7 @@ import '../../core/theme/app_spacing.dart';
 import '../calendar/calendar_screen.dart';
 import '../settings/account_settings_screen.dart';
 import '../team/team_screen.dart';
-import '../todo_list/todo_list_screen.dart';
+import '../todo_list/account_todo_screen.dart';
 
 /// 하단 탭 4개(할 일·일정·팀·설정)를 담는 앱의 첫 화면.
 ///
@@ -19,7 +19,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   static const _tabs = [
-    _Tab(label: '할 일', icon: Icons.checklist, screen: TodoListScreen()),
+    _Tab(label: '할 일', icon: Icons.checklist, screen: AccountTodoScreen()),
     _Tab(
       label: '일정',
       icon: Icons.calendar_today_outlined,
