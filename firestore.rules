@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 본인 계정의 할 일만 읽고 쓸 수 있다. 다른 경로는 기본 거부한다.
+    match /users/{uid}/todos/{todoId} {
+      function isOwner() {
+        return request.auth != null && request.auth.uid == uid;
+      }
+      function isValidDocument() {
+        let data = request.resource.data;
+        return data.id == todoId
+          && data.updatedAt is timestamp
+          && data.operationId is string
+          && data.deleted is bool
+          && (data.deleted
+            ? (data.deleteToken is string && data.deleteToken == data.operationId)
+            : (data.title is string && data.title.size() > 0 && data.title.size() <= 100
+              && data.importance in ['important', 'unimportant']
+              && data.urgency in ['urgent', 'notUrgent']
+              && data.is_completed in [0, 1]
+              && data.reminder_enabled in [0, 1]
+              && data.source in ['manual', 'photo']));
+      }
+      function isAllowedUpdate() {
+        let old = resource.data;
+        let next = request.resource.data;
+        // 삭제는 시각에 관계없이 우선한다. 일반 수정으로 삭제 기록을 지우지 못한다.
+        return next.deleted
+          || (old.deleted
+            ? (next.get('restoredFrom', '') == old.deleteToken
+              && next.updatedAt > old.updatedAt)
+            : next.updatedAt >= old.updatedAt);
+      }
+      allow read: if isOwner();
+      allow create: if isOwner() && isValidDocument();
+      allow update: if isOwner() && isValidDocument() && isAllowedUpdate();
+      // 삭제 우선 판정을 위해 삭제 문서를 유지한다.
+      allow delete: if false;
+    }
+  }
+}
