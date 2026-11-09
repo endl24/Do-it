@@ -55,7 +55,8 @@ class TodoController extends ChangeNotifier {
   Future<void> _load({required bool fromServer}) async {
     _watch();
     final version = _snapshotVersion;
-    isLoading = true;
+    // 기존 목록이 있는 서버 새로고침은 목록·배지·요약을 유지한다.
+    if (!fromServer || _todos.isEmpty) isLoading = true;
     loadErrorMessage = null;
     errorMessage = null;
     notifyListeners();

@@ -5,6 +5,7 @@ import 'package:do_it/screens/home/todo_controller.dart';
 import 'package:do_it/screens/todo_list/todo_list_screen.dart';
 import 'package:do_it/services/firestore_todo_repository.dart';
 import 'package:do_it/services/firestore_todo_store.dart';
+import 'package:do_it/widgets/skeleton_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -122,6 +123,48 @@ void main() {
     expect(find.textContaining('서버에서 새로고침하지 못했습니다'), findsOneWidget);
   });
 
+  for (final shouldFail in [false, true]) {
+    testWidgets('서버 응답 대기 중 목록·배지·요약을 유지한다 (${shouldFail ? '실패' : '성공'})', (
+      tester,
+    ) async {
+      final delayed = _DelayedRefreshStore();
+      store = delayed;
+      repository = FirestoreTodoRepository(store);
+      receive('기존 목록');
+      await pump(tester);
+
+      await tester.drag(find.byType(ListView), const Offset(0, 400));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(store.serverReads, 1);
+      expect(find.text('기존 목록'), findsOneWidget);
+      expect(find.text('남은 할 일 1개'), findsOneWidget);
+      expect(find.text('동기화 완료'), findsOneWidget);
+      expect(find.byType(SkeletonList), findsNothing);
+      expect(find.byType(RefreshProgressIndicator), findsOneWidget);
+
+      if (shouldFail) {
+        delayed.gate.completeError(StateError('서버 응답 실패'));
+      } else {
+        delayed.gate.complete([
+          RemoteTodoDocument(
+            id: 'shared',
+            data: migrationTodo('shared', title: '서버 최신 목록').toMap(),
+          ),
+        ]);
+      }
+      await tester.pumpAndSettle();
+      expect(find.text(shouldFail ? '기존 목록' : '서버 최신 목록'), findsOneWidget);
+      expect(find.text('남은 할 일 1개'), findsOneWidget);
+      expect(find.text('동기화 완료'), findsOneWidget);
+      expect(find.byType(SkeletonList), findsNothing);
+      expect(
+        find.textContaining('서버에서 새로고침하지 못했습니다'),
+        shouldFail ? findsOneWidget : findsNothing,
+      );
+    });
+  }
+
   testWidgets('필터 결과가 없어도 당겨서 새로고침한다', (tester) async {
     receive('미완료 항목');
     await pump(tester);
@@ -216,6 +259,17 @@ void main() {
     controller.dispose();
     await failing.changes.close();
   });
+}
+
+// 초기 조회는 즉시 끝내고 수동 서버 새로고침 응답만 지연시킨다.
+class _DelayedRefreshStore extends FakeFirestoreTodoStore {
+  final gate = Completer<List<RemoteTodoDocument>>();
+
+  @override
+  Future<List<RemoteTodoDocument>> readServer() {
+    serverReads++;
+    return gate.future;
+  }
 }
 
 // 쓰기 응답을 늦춰 서버 구독 결과와 오류 되돌리기가 겹치는 상황을 검사한다.

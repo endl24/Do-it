@@ -17,22 +17,26 @@
 - 연결 복구 시 배너를 숨기고 서버 새로고침을 요청한다. 실제 전송 완료 판정은 HTTPS 확인이 아니라 Firestore의 `hasPendingWrites`를 사용한다.
 
 ## 자동 검사
+저장소 최상위 폴더에서 실행한다.
+
 ```powershell
-cd C:\Users\cheol\Desktop\Do-it\app
+cd app
 flutter analyze
 flutter test
 ```
 
 ## Android 실제 확인 (아직 자동 테스트 결과로 대체하지 않음)
-두 에뮬레이터에서 같은 계정으로 로그인한다. 각 터미널의 작업 폴더는 `app`이다.
+두 에뮬레이터에서 같은 계정으로 로그인한다. 각 터미널은 저장소 최상위 폴더에서 시작한다. 이미 `app` 폴더에 있다면 `cd app`은 생략한다.
 
 ```powershell
+cd app
 flutter devices
 flutter run -d emulator-5554 --dart-define-from-file=.env
 ```
 
 두 번째 터미널:
 ```powershell
+cd app
 flutter run -d emulator-5556 --dart-define-from-file=.env
 ```
 
