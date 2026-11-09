@@ -26,19 +26,27 @@ flutter test
 ```
 
 ## Android 실제 확인 (아직 자동 테스트 결과로 대체하지 않음)
-두 에뮬레이터에서 같은 계정으로 로그인한다. 각 터미널은 저장소 최상위 폴더에서 시작한다. 이미 `app` 폴더에 있다면 `cd app`은 생략한다.
+Android Studio의 Device Manager에서 에뮬레이터 두 대를 켠다. 각 터미널은 각자 복제한 저장소의 최상위 폴더에서 시작한다. 이미 `app` 폴더에 있다면 `cd app`은 생략한다.
+
+먼저 `app` 폴더에서 `flutter devices`를 실행해 두 Android 기기의 ID를 확인한다. 기기 ID는 PC와 실행 상태에 따라 달라지므로 아래 `DEVICE_A_ID`와 `DEVICE_B_ID`를 실제 출력된 서로 다른 ID로 바꾼다. 표시 이름이 같아도 ID가 다르면 서로 다른 기기다.
+
+`app/.env`는 [Firebase 설정 안내](firebase_setup.md)에 따라 각자 준비한다. 아래 `.env` 경로는 명령어를 실행하는 `app` 폴더 기준이다. 실제 설정 값은 Git에 올리지 않는다.
+
+첫 번째 터미널:
 
 ```powershell
 cd app
 flutter devices
-flutter run -d emulator-5554 --dart-define-from-file=.env
+flutter run -d "DEVICE_A_ID" --dart-define-from-file=.env
 ```
 
 두 번째 터미널:
 ```powershell
 cd app
-flutter run -d emulator-5556 --dart-define-from-file=.env
+flutter run -d "DEVICE_B_ID" --dart-define-from-file=.env
 ```
+
+첫 번째 실행을 종료하지 않고 두 번째 터미널에서 다른 기기를 실행한다. 두 앱에서 같은 계정으로 로그인한다. 아래 A·B는 선택한 두 기기를 구분하는 이름이다.
 
 1. A에서 `78 동기화 확인`을 추가한다. B에서 새로고침 없이 표시되는지 확인한다.
 2. A에서 제목 수정·완료 전환·삭제를 수행하고 B의 목록에도 반영되는지 확인한다.
