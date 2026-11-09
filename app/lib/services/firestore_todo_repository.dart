@@ -1,9 +1,10 @@
 import '../models/todo.dart';
 import 'firestore_todo_store.dart';
+import 'live_todo_repository.dart';
 import 'todo_repository.dart';
 
 // 계정별 서버 할 일을 조회·저장하고 삭제 기록으로 오래된 수정의 복원을 막는다.
-class FirestoreTodoRepository implements TodoRepository {
+class FirestoreTodoRepository implements TodoRepository, LiveTodoRepository {
   FirestoreTodoRepository(this.store, {DateTime Function()? clock})
     : _clock = clock ?? DateTime.now;
 
@@ -15,6 +16,30 @@ class FirestoreTodoRepository implements TodoRepository {
   @override
   Future<List<Todo>> getAll() async {
     final documents = await store.readAll();
+    return _todosFrom(documents);
+  }
+
+  // 서버에서 다시 받은 목록을 기존 Todo 모델로 변환한다.
+  @override
+  Future<List<Todo>> refreshFromServer() async =>
+      _todosFrom(await store.readServer());
+
+  // 삭제 문서의 전송 대기도 세되 삭제된 할 일 자체는 목록에서 숨긴다.
+  @override
+  Stream<TodoSyncSnapshot> watchTodos() => store.watchAll().map(
+    (documents) => TodoSyncSnapshot(
+      todos: _todosFrom(documents),
+      pendingCount: documents
+          .where(
+            (document) =>
+                document.isPending || store.hasWriteFailure(document.id),
+          )
+          .length,
+    ),
+  );
+
+  // SDK 문서의 대기·실패 상태를 화면에서 사용하는 공통 모델에 옮긴다.
+  List<Todo> _todosFrom(List<RemoteTodoDocument> documents) {
     return [
       for (final document in documents)
         if (document.data['deleted'] != true)

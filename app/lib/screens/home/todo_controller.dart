@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../../models/todo.dart';
+import '../../services/live_todo_repository.dart';
 import '../../services/todo_repository.dart';
 
 enum TodoFilter { all, incomplete, completed }
@@ -10,6 +13,13 @@ class TodoController extends ChangeNotifier {
 
   final TodoRepository _repository;
   final List<Todo> _todos = <Todo>[];
+  StreamSubscription<TodoSyncSnapshot>? _subscription;
+  Future<void>? _loading;
+  bool _isDisposed = false;
+  int _snapshotVersion = 0;
+  int? syncPendingCount;
+
+  bool get isRemote => _repository is LiveTodoRepository;
 
   bool isLoading = true;
 
@@ -34,22 +44,82 @@ class TodoController extends ChangeNotifier {
 
   int get incompleteCount => _todos.where((todo) => !todo.isCompleted).length;
 
-  Future<void> load() async {
+  // 중복 조회를 합치고 실시간 구독은 컨트롤러당 하나만 유지한다.
+  Future<void> load({bool fromServer = false}) {
+    return _loading ??= _load(fromServer: fromServer).whenComplete(() {
+      _loading = null;
+    });
+  }
+
+  // 늦게 끝난 조회가 더 최근에 도착한 실시간 목록을 덮어쓰지 않도록 한다.
+  Future<void> _load({required bool fromServer}) async {
+    _watch();
+    final version = _snapshotVersion;
     isLoading = true;
     loadErrorMessage = null;
     errorMessage = null;
     notifyListeners();
     try {
-      _todos
-        ..clear()
-        ..addAll(await _repository.getAll());
-      _sort();
+      final repository = _repository;
+      final todos = fromServer && repository is LiveTodoRepository
+          ? await (repository as LiveTodoRepository).refreshFromServer()
+          : await repository.getAll();
+      if (_isDisposed) return;
+      if (version == _snapshotVersion) _replace(todos);
     } catch (_) {
-      loadErrorMessage = '저장된 할 일을 불러오지 못했습니다. 다시 시도해 주세요.';
+      if (_isDisposed) return;
+      if (fromServer) {
+        errorMessage = '서버에서 새로고침하지 못했습니다. 연결 상태를 확인해 주세요.';
+      } else if (version == _snapshotVersion) {
+        loadErrorMessage = '저장된 할 일을 불러오지 못했습니다. 다시 시도해 주세요.';
+      }
     } finally {
-      isLoading = false;
-      notifyListeners();
+      if (!_isDisposed) {
+        isLoading = false;
+        notifyListeners();
+      }
     }
+  }
+
+  // 다른 기기의 변경과 메타데이터 변경을 같은 목록에 반영한다.
+  void _watch() {
+    final repository = _repository;
+    if (repository is! LiveTodoRepository || _subscription != null) return;
+    _subscription = (repository as LiveTodoRepository).watchTodos().listen(
+      (snapshot) {
+        if (_isDisposed) return;
+        _snapshotVersion++;
+        syncPendingCount = snapshot.pendingCount;
+        _replace(snapshot.todos);
+        isLoading = false;
+        loadErrorMessage = null;
+        notifyListeners();
+      },
+      onError: (Object error) {
+        if (_isDisposed) return;
+        loadErrorMessage = '서버 변경을 불러오지 못했습니다. 다시 시도해 주세요.';
+        isLoading = false;
+        notifyListeners();
+        unawaited(_subscription?.cancel());
+        _subscription = null;
+      },
+    );
+  }
+
+  // 목록 교체 후 기존 정렬 규칙을 그대로 적용한다.
+  void _replace(List<Todo> todos) {
+    _todos
+      ..clear()
+      ..addAll(todos);
+    _sort();
+  }
+
+  // 계정 전환이나 화면 종료 후 이전 구독이 화면을 갱신하지 않도록 정리한다.
+  @override
+  void dispose() {
+    _isDisposed = true;
+    unawaited(_subscription?.cancel());
+    super.dispose();
   }
 
   void setFilter(TodoFilter nextFilter) {
@@ -95,6 +165,7 @@ class TodoController extends ChangeNotifier {
   Future<bool> remove(Todo todo) async {
     final index = _todos.indexOf(todo);
     if (index < 0) return false;
+    final version = _snapshotVersion;
     errorMessage = null;
     _todos.removeAt(index);
     notifyListeners();
@@ -102,7 +173,8 @@ class TodoController extends ChangeNotifier {
       await _repository.delete(todo.id);
       return true;
     } catch (_) {
-      _todos.insert(index, todo);
+      if (_isDisposed) return false;
+      if (version == _snapshotVersion) _todos.insert(index, todo);
       errorMessage = '할 일을 삭제하지 못했습니다.';
       notifyListeners();
       return false;
@@ -122,11 +194,13 @@ class TodoController extends ChangeNotifier {
   }
 
   Future<bool> _persist(Todo todo, {required VoidCallback rollback}) async {
+    final version = _snapshotVersion;
     try {
       await _repository.save(todo);
       return true;
     } catch (_) {
-      rollback();
+      if (_isDisposed) return false;
+      if (version == _snapshotVersion) rollback();
       _sort();
       errorMessage = '기기에 저장하지 못했습니다. 저장 공간을 확인해 주세요.';
       notifyListeners();

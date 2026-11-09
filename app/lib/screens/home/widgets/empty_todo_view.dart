@@ -11,6 +11,7 @@ class EmptyTodoView extends StatelessWidget {
     // 화면이 넉넉하면 가운데에 두고, 작은 화면이나 큰 글자에서는 넘치지 않게 스크롤한다.
     return LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
           child: Padding(
