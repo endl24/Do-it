@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_spacing.dart';
 
+/// 할 일을 목록 또는 사분면으로 보는 방식을 나타낸다.
 enum TodoViewMode { list, quadrant }
 
+/// 목록과 사분면 보기 사이를 바꾸는 세그먼트 버튼이다.
 class TodoViewSwitcher extends StatelessWidget {
+  /// 현재 [selected] 보기와 변경 처리 함수를 받는다.
   const TodoViewSwitcher({
     required this.selected,
     required this.onChanged,
@@ -14,6 +17,7 @@ class TodoViewSwitcher extends StatelessWidget {
   final TodoViewMode selected;
   final ValueChanged<TodoViewMode> onChanged;
 
+  /// 두 보기 방식을 선택할 수 있는 세그먼트 버튼을 구성한다.
   @override
   Widget build(BuildContext context) {
     return Padding(

@@ -20,7 +20,9 @@ import '../todo_quadrant/todo_quadrant_view.dart';
 import 'todo_form_sheet.dart';
 import 'widgets/todo_view_switcher.dart';
 
+/// 저장된 할 일을 목록 또는 사분면으로 보여주고 변경 동작을 연결하는 화면이다.
 class TodoListScreen extends StatefulWidget {
+  /// 선택한 [repository]에서 할 일을 불러오는 목록 화면을 만든다.
   const TodoListScreen({super.key, this.repository, this.isOnline = true});
 
   final TodoRepository? repository;
@@ -28,10 +30,12 @@ class TodoListScreen extends StatefulWidget {
   /// `false`면 목록 위에 오프라인 배너를 띄운다 (E1).
   final bool isOnline;
 
+  /// 목록의 조회 상태와 사용자 동작을 관리하는 상태 객체를 만든다.
   @override
   State<TodoListScreen> createState() => _TodoListScreenState();
 }
 
+/// 할 일 조회와 필터, 화면 전환 및 저장 결과를 관리한다.
 class _TodoListScreenState extends State<TodoListScreen> {
   late final TodoController _controller;
   late final _retryBackoff = RetryBackoff(onRetry: _load);
@@ -39,8 +43,10 @@ class _TodoListScreenState extends State<TodoListScreen> {
   bool _wasLoading = false;
   String? _lastLoadError;
 
+  /// 현재 사분면 보기를 선택했는지 알려준다.
   bool get _isQuadrantMode => _viewMode == TodoViewMode.quadrant;
 
+  /// 저장소와 재시도 상태를 준비하고 첫 목록을 불러온다.
   @override
   void initState() {
     super.initState();
@@ -49,6 +55,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     _load();
   }
 
+  /// 재시도 예약과 목록 컨트롤러가 사용한 자원을 해제한다.
   @override
   void dispose() {
     _retryBackoff.dispose();
@@ -56,13 +63,14 @@ class _TodoListScreenState extends State<TodoListScreen> {
     super.dispose();
   }
 
+  /// 예약된 재시도를 취소하고 저장소에서 목록을 다시 불러온다.
   Future<void> _load() async {
     // 직접 다시 시도한 사이에 예약된 재시도가 겹쳐 두 번 불러오지 않게 한다.
     _retryBackoff.cancel();
     await _controller.load();
   }
 
-  // 조회와 실시간 구독의 실패 모두 기존 자동 재시도 규칙으로 처리한다.
+  /// 조회와 실시간 구독 결과를 자동 재시도 상태에 반영한다.
   void _trackLoadResult() {
     final error = _controller.loadErrorMessage;
     if (!_controller.isLoading && error == null) {
@@ -76,7 +84,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     _lastLoadError = error;
   }
 
-  // 수동 새로고침은 서버 응답을 요청하고 실패해도 현재 목록을 보존한다.
+  /// 서버 목록을 새로 요청하며 실패하면 현재 목록을 보존하고 안내한다.
   Future<void> _refresh() async {
     _retryBackoff.cancel();
     await _controller.load(fromServer: true);
@@ -86,7 +94,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     }
   }
 
-  // 연결이 복구되면 서버 목록을 다시 받아 캐시와 화면을 맞춘다.
+  /// 온라인 연결이 복구되면 서버 목록을 받아 캐시와 화면을 맞춘다.
   @override
   void didUpdateWidget(covariant TodoListScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -126,6 +134,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
       _controller.loadErrorMessage == null &&
       _controller.todos.isEmpty;
 
+  /// 현재 조회 상태와 보기 방식에 맞는 할 일 화면을 구성한다.
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -186,6 +195,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     );
   }
 
+  /// 로딩·오류·빈 목록·목록·사분면 중 현재 상태에 맞는 본문을 만든다.
   Widget _buildBody() {
     const statusPadding = EdgeInsets.fromLTRB(
       AppSpacing.screenHorizontal,
@@ -298,12 +308,14 @@ class _TodoListScreenState extends State<TodoListScreen> {
   }
 
   // TODO(강두이): 카메라·글자 인식 구현체가 생기면 MemoCaptureScreen.open으로 바꾼다.
+  /// 사진 가져오기 기능이 준비되지 않았다는 안내를 보여준다.
   void _showPhotoComingSoon() {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(const SnackBar(content: Text('사진에서 가져오기는 아직 준비 중입니다.')));
   }
 
+  /// 추가 또는 수정 시트를 열고 반환된 변경을 저장소에 반영한다.
   Future<void> _openForm([Todo? todo]) async {
     final result = await showTodoFormSheet(context, todo: todo);
     if (!mounted || result == null) return;
@@ -324,6 +336,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     );
   }
 
+  /// [todo]의 상세 화면을 열고 완료 또는 삭제 결과를 목록에 반영한다.
   Future<void> _openDetail(Todo todo) async {
     final result = await Navigator.of(context).push<TodoDetailResult>(
       MaterialPageRoute(
@@ -349,18 +362,21 @@ class _TodoListScreenState extends State<TodoListScreen> {
     );
   }
 
+  /// [todo]를 [target] 사분면으로 옮기고 실패하면 안내한다.
   Future<void> _move(Todo todo, TodoQuadrant target) async {
     final succeeded = await _controller.move(todo, target);
     if (!mounted || succeeded) return;
     _showResult(false, successMessage: '');
   }
 
+  /// [todo]의 완료 상태를 반대로 바꾸고 실패하면 안내한다.
   Future<void> _toggle(Todo todo) async {
     final succeeded = await _controller.toggle(todo);
     if (!mounted || succeeded) return;
     _showResult(false, successMessage: '');
   }
 
+  /// 확인을 받은 뒤 [todo]를 삭제하고 실행 취소 동작을 제공한다.
   Future<void> _delete(Todo todo) async {
     final confirmed = await showDeleteTodoDialog(context, todo.title);
     if (!mounted || !confirmed) return;
@@ -378,12 +394,14 @@ class _TodoListScreenState extends State<TodoListScreen> {
     );
   }
 
+  /// 삭제한 [todo]를 다시 저장하고 실패하면 안내한다.
   Future<void> _restore(Todo todo) async {
     final succeeded = await _controller.add(todo);
     if (!mounted || succeeded) return;
     _showResult(false, successMessage: '');
   }
 
+  /// 저장 결과에 따라 성공 메시지 또는 컨트롤러 오류를 보여준다.
   void _showResult(bool succeeded, {required String successMessage}) {
     final message = succeeded ? successMessage : _controller.errorMessage;
     if (message == null || message.isEmpty) return;
@@ -392,6 +410,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
+  /// [date]가 오늘과 같은 날짜인지 알려준다.
   static bool _isDueToday(DateTime? date) {
     if (date == null) return false;
     final now = DateTime.now();
@@ -400,6 +419,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
         date.day == now.day;
   }
 
+  /// [date]를 오늘·내일 또는 월일 형식의 짧은 마감 문구로 바꾼다.
   static String? _dueLabel(DateTime? date) {
     if (date == null) return null;
     final now = DateTime.now();
@@ -411,12 +431,15 @@ class _TodoListScreenState extends State<TodoListScreen> {
   }
 }
 
+/// 전체·미완료·완료 필터를 가로로 나열하는 선택 영역이다.
 class _FilterBar extends StatelessWidget {
+  /// 현재 [selected] 필터와 선택 처리 함수를 받는다.
   const _FilterBar({required this.selected, required this.onSelected});
 
   final TodoFilter selected;
   final ValueChanged<TodoFilter> onSelected;
 
+  /// 세 가지 필터 칩을 스크롤 가능한 한 줄로 구성한다.
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -455,7 +478,9 @@ class _FilterBar extends StatelessWidget {
   }
 }
 
+/// 하나의 할 일 필터 값을 선택하는 칩이다.
 class _FilterChip extends StatelessWidget {
+  /// 표시할 문구와 필터 값, 현재 선택 상태를 받는다.
   const _FilterChip({
     required this.label,
     required this.value,
@@ -468,6 +493,7 @@ class _FilterChip extends StatelessWidget {
   final TodoFilter selected;
   final ValueChanged<TodoFilter> onSelected;
 
+  /// 현재 필터와 비교해 선택 상태를 표시하고 탭 동작을 연결한다.
   @override
   Widget build(BuildContext context) {
     return ChoiceChip(
