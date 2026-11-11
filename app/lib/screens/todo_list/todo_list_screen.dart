@@ -350,6 +350,8 @@ class _TodoListScreenState extends State<TodoListScreen> {
     var added = 0;
     final now = DateTime.now();
     for (final (index, title) in titles.indexed) {
+      // 목록은 최근 만든 순서라, 메모 첫 줄이 맨 위에 오도록 뒷줄일수록 조금 앞선 시각을 준다.
+      final createdAt = now.subtract(Duration(microseconds: index));
       final succeeded = await _controller.add(
         Todo(
           // 한꺼번에 만들어 시각이 겹쳐도 ID가 같아지지 않게 순번을 붙인다.
@@ -362,8 +364,8 @@ class _TodoListScreenState extends State<TodoListScreen> {
           reminderEnabled: false,
           source: TodoSource.photo,
           syncStatus: TodoSyncStatus.localOnly,
-          createdAt: now,
-          updatedAt: now,
+          createdAt: createdAt,
+          updatedAt: createdAt,
         ),
       );
       if (!succeeded) {

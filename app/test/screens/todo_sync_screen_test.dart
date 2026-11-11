@@ -1,15 +1,18 @@
 import 'dart:async';
 
 import 'package:do_it/core/theme/app_theme.dart';
+import 'package:do_it/models/todo.dart';
 import 'package:do_it/screens/home/todo_controller.dart';
 import 'package:do_it/screens/todo_list/todo_list_screen.dart';
 import 'package:do_it/services/firestore_todo_repository.dart';
 import 'package:do_it/services/firestore_todo_store.dart';
+import 'package:do_it/services/permission_service.dart';
 import 'package:do_it/widgets/skeleton_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../services/fake_firestore_todo_store.dart';
+import 'fake_photo_import.dart';
 
 void main() {
   late FakeFirestoreTodoStore store;
@@ -258,6 +261,41 @@ void main() {
     expect(controller.todos.single.title, '최신 서버 제목');
     controller.dispose();
     await failing.changes.close();
+  });
+
+  testWidgets('오프라인에서 사진으로 등록해도 단말에 먼저 저장하고 동기화 대기로 보여준다 (#36)', (
+    tester,
+  ) async {
+    store.isOnline = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: TodoListScreen(
+          repository: repository,
+          isOnline: false,
+          memoScanner: FakeMemoScanner(),
+          permissionService: FakePermissionService(AppPermissionStatus.granted),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('사진에서 가져오기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.bySemanticsLabel('촬영'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('선택한 2개 할 일로 등록'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('할 일 2개를 추가했습니다.'), findsOneWidget);
+    expect(find.text('졸업 서류 제출'), findsOneWidget);
+    expect(find.text('도서관 책 반납'), findsOneWidget);
+    expect(find.text('동기화 대기 2'), findsOneWidget);
+    expect(store.documents.values.where((doc) => doc.isPending), hasLength(2));
+    expect(
+      store.documents.values.map((doc) => doc.data['source']),
+      everyElement(TodoSource.photo.name),
+    );
   });
 }
 
