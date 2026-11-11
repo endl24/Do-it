@@ -10,9 +10,12 @@ import '../../widgets/grouped_card.dart';
 import '../../widgets/quadrant_tag.dart';
 import '../todo_list/todo_form_sheet.dart';
 
+/// 상세 화면을 닫을 때 목록에 전달할 변경 종류를 나타낸다.
 enum TodoDetailAction { completionChanged, deleted }
 
+/// 상세 화면에서 변경한 할 일과 동작을 목록에 전달한다.
 class TodoDetailResult {
+  /// 수행한 [action]과 최신 [todo]를 담은 결과를 만든다.
   const TodoDetailResult({required this.action, required this.todo});
 
   final TodoDetailAction action;
@@ -21,7 +24,9 @@ class TodoDetailResult {
   final Todo todo;
 }
 
+/// 할 일의 분류와 마감 정보, 완료 상태를 보여주고 변경 동작을 제공한다.
 class TodoDetailScreen extends StatefulWidget {
+  /// 표시할 [todo]와 수정·삭제 저장 함수를 받아 상세 화면을 만든다.
   const TodoDetailScreen({
     required this.todo,
     required this.onUpdate,
@@ -35,19 +40,23 @@ class TodoDetailScreen extends StatefulWidget {
   final Future<bool> Function(Todo todo) onDelete;
   final DateTime? currentDate;
 
+  /// 상세 화면의 최신 할 일과 저장 상태를 관리하는 상태 객체를 만든다.
   @override
   State<TodoDetailScreen> createState() => _TodoDetailScreenState();
 }
 
+/// 상세 화면에서 수정·완료·삭제 요청과 표시 값을 관리한다.
 class _TodoDetailScreenState extends State<TodoDetailScreen> {
   late Todo _todo = widget.todo;
   bool _isSaving = false;
 
+  /// 남은 기간 계산에 사용할 오늘 날짜를 시각 없이 돌려준다.
   DateTime get _today {
     final now = widget.currentDate ?? DateTime.now();
     return DateTime(now.year, now.month, now.day);
   }
 
+  /// 수정 시트를 열고 바뀐 할 일을 저장한 뒤 화면에 반영한다.
   Future<void> _edit() async {
     if (_isSaving) return;
     final result = await showTodoFormSheet(context, todo: _todo);
@@ -68,6 +77,7 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
     _showMessage(succeeded ? '할 일을 수정했습니다.' : '할 일을 수정하지 못했습니다.');
   }
 
+  /// 완료 상태를 반대로 저장하고 성공하면 결과와 함께 화면을 닫는다.
   Future<void> _toggleCompleted() async {
     if (_isSaving) return;
     final updated = _todo.copyWith(isCompleted: !_todo.isCompleted);
@@ -87,6 +97,7 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
     );
   }
 
+  /// 확인을 받은 뒤 할 일을 삭제하고 결과와 함께 화면을 닫는다.
   Future<void> _delete() async {
     if (_isSaving) return;
     final confirmed = await showDeleteTodoDialog(context, _todo.title);
@@ -103,12 +114,14 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
         .pop(TodoDetailResult(action: TodoDetailAction.deleted, todo: _todo));
   }
 
+  /// 기존 안내를 닫고 [message]를 스낵바로 보여준다.
   void _showMessage(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
+  /// 최신 할 일 정보와 수정·완료·삭제 버튼을 갖춘 상세 화면을 구성한다.
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -178,12 +191,14 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
     );
   }
 
+  /// 마감일을 연월일 문구로 바꾸며 값이 없으면 설정되지 않았음을 알린다.
   String _dueDateLabel() {
     final dueDate = _todo.dueDate;
     if (dueDate == null) return '설정 안 함';
     return '${dueDate.year}년 ${dueDate.month}월 ${dueDate.day}일';
   }
 
+  /// 오늘을 기준으로 마감일까지 남거나 지난 기간을 표시한다.
   String _remainingLabel() {
     final dueDate = _todo.dueDate;
     if (dueDate == null) return '마감일 없음';
@@ -194,6 +209,7 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
     return '${difference.abs()}일 지남';
   }
 
+  /// 할 일이 직접 입력되었는지 사진에서 가져왔는지 설명한다.
   String _sourceLabel() {
     return switch (_todo.source) {
       TodoSource.manual => '직접 입력',

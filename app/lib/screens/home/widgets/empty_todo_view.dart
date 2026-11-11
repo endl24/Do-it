@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
+/// 할 일이 없을 때 추가 방법과 진입 버튼을 보여주는 화면이다.
 class EmptyTodoView extends StatelessWidget {
+  /// 직접 추가와 사진 가져오기 동작을 받아 빈 상태 화면을 만든다.
   const EmptyTodoView({required this.onAdd, required this.onPhoto, super.key});
 
   final VoidCallback onAdd;
   final VoidCallback onPhoto;
 
+  /// 작은 화면에서도 스크롤할 수 있는 빈 상태 안내를 구성한다.
   @override
   Widget build(BuildContext context) {
     // 화면이 넉넉하면 가운데에 두고, 작은 화면이나 큰 글자에서는 넘치지 않게 스크롤한다.
