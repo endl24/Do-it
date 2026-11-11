@@ -4,6 +4,7 @@ import 'package:do_it/core/theme/app_theme.dart';
 import 'package:do_it/screens/todo_list/account_todo_screen.dart';
 import 'package:do_it/services/account_service.dart';
 import 'package:do_it/services/firestore_todo_repository.dart';
+import 'package:do_it/services/firestore_todo_store.dart';
 import 'package:do_it/services/todo_migration.dart';
 import 'package:do_it/services/todo_repository.dart';
 import 'package:flutter/material.dart';
@@ -42,6 +43,7 @@ void main() {
   late InMemoryTodoRepository local;
   late Map<String, FakeFirestoreTodoStore> stores;
   late MemoryMigrationJournal journal;
+  late StreamController<bool> onlineChanges;
 
   setUp(() {
     account = SwitchingAccountService();
@@ -50,8 +52,15 @@ void main() {
     ]);
     stores = {};
     journal = MemoryMigrationJournal();
+    onlineChanges = StreamController<bool>.broadcast();
   });
-  tearDown(() => account.changes.close());
+  tearDown(() async {
+    await account.changes.close();
+    await onlineChanges.close();
+    for (final store in stores.values) {
+      await store.changes.close();
+    }
+  });
 
   // 테스트 저장소와 인증 서비스를 연결하되 실제 SQLite·Firebase는 호출하지 않는다.
   Future<void> pump(WidgetTester tester) async {
@@ -66,7 +75,11 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light,
-        home: AccountTodoScreen(accountService: account, session: session),
+        home: AccountTodoScreen(
+          accountService: account,
+          session: session,
+          onlineChanges: onlineChanges.stream,
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -93,6 +106,27 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('로컬에서 만든 할 일'), findsNothing);
     expect(stores['account-b']!.documents, isEmpty);
+    expect(stores['account-a']!.changes.hasListener, isFalse);
+    stores['account-a']!.documents['late'] = RemoteTodoDocument(
+      id: 'late',
+      data: migrationTodo('late', title: '이전 계정 변경').toMap(),
+    );
+    stores['account-a']!.emit();
+    await tester.pumpAndSettle();
+    expect(find.text('이전 계정 변경'), findsNothing);
+  });
+
+  testWidgets('연결 감지 결과를 배너와 서버 재조회에 연결한다', (tester) async {
+    await pump(tester);
+    await account.signIn('account-a', 'unused');
+    await tester.pumpAndSettle();
+    onlineChanges.add(false);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('오프라인 상태입니다'), findsOneWidget);
+    onlineChanges.add(true);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('오프라인 상태입니다'), findsNothing);
+    expect(stores['account-a']!.serverReads, 1);
   });
 
   testWidgets('이관 실패 시 원본을 남기고 재시도 버튼으로 복구한다', (tester) async {

@@ -14,9 +14,38 @@ class FirebaseTodoStore implements FirestoreTodoStore {
   final FirebaseFirestore _firestore;
   final Map<String, String> _failures = {};
   final Map<String, String> _operations = {};
+  final _writeChanges = StreamController<void>.broadcast();
 
   CollectionReference<Map<String, dynamic>> get _todos =>
       _firestore.collection('users').doc(uid).collection('todos');
+
+  // 캐시로 대체하지 않고 서버 응답을 요청해 수동 새로고침 실패를 구분한다.
+  @override
+  Future<List<RemoteTodoDocument>> readServer() async {
+    final snapshot = await _todos
+        .get(const GetOptions(source: Source.server))
+        .timeout(const Duration(seconds: 5));
+    return snapshot.docs.map(_document).toList(growable: false);
+  }
+
+  // 문서 내용뿐 아니라 서버 전송 완료에 따른 대기 상태 변경도 전달한다.
+  @override
+  Stream<List<RemoteTodoDocument>> watchAll() => Stream.multi((controller) {
+    List<RemoteTodoDocument>? latest;
+    final snapshots = _todos.snapshots(includeMetadataChanges: true).listen((
+      snapshot,
+    ) {
+      latest = snapshot.docs.map(_document).toList(growable: false);
+      controller.add(latest!);
+    }, onError: controller.addError);
+    final writes = _writeChanges.stream.listen((_) {
+      if (latest != null) controller.add(latest!);
+    });
+    controller.onCancel = () async {
+      await snapshots.cancel();
+      await writes.cancel();
+    };
+  });
 
   // 서버 조회가 지연되면 이미 저장된 캐시를 사용한다. 서버 권한 오류는 숨기지 않는다.
   @override
@@ -98,7 +127,10 @@ class FirebaseTodoStore implements FirestoreTodoStore {
               if (!localAccepted.isCompleted) localAccepted.complete();
             },
             onError: (Object error, StackTrace stack) {
-              if (_operations[id] == operationId) _failures[id] = operationId;
+              if (_operations[id] == operationId) {
+                _failures[id] = operationId;
+                _writeChanges.add(null);
+              }
               if (!localAccepted.isCompleted) {
                 localAccepted.completeError(error, stack);
               }
