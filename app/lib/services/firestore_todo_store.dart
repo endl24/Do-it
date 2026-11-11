@@ -16,6 +16,8 @@ class RemoteTodoDocument {
 // Firebase SDK와 저장소 로직을 분리해 오프라인 쓰기·이관을 독립적으로 검증한다.
 abstract interface class FirestoreTodoStore {
   Future<List<RemoteTodoDocument>> readAll();
+  Future<List<RemoteTodoDocument>> readServer();
+  Stream<List<RemoteTodoDocument>> watchAll();
   Future<RemoteTodoDocument?> readCached(String id);
 
   // SDK가 로컬 쓰기를 받아들이면 반환한다. 서버 확인까지 기다리지 않는다.

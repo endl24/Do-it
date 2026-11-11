@@ -36,6 +36,8 @@ class _TodoListScreenState extends State<TodoListScreen> {
   late final TodoController _controller;
   late final _retryBackoff = RetryBackoff(onRetry: _load);
   var _viewMode = TodoViewMode.list;
+  bool _wasLoading = false;
+  String? _lastLoadError;
 
   bool get _isQuadrantMode => _viewMode == TodoViewMode.quadrant;
 
@@ -43,6 +45,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
   void initState() {
     super.initState();
     _controller = TodoController(widget.repository ?? SqliteTodoRepository());
+    _controller.addListener(_trackLoadResult);
     _load();
   }
 
@@ -57,14 +60,38 @@ class _TodoListScreenState extends State<TodoListScreen> {
     // 직접 다시 시도한 사이에 예약된 재시도가 겹쳐 두 번 불러오지 않게 한다.
     _retryBackoff.cancel();
     await _controller.load();
+  }
+
+  // 조회와 실시간 구독의 실패 모두 기존 자동 재시도 규칙으로 처리한다.
+  void _trackLoadResult() {
+    final error = _controller.loadErrorMessage;
+    if (!_controller.isLoading && error == null) {
+      _retryBackoff.recordSuccess();
+    } else if (error != null &&
+        (_wasLoading || error != _lastLoadError) &&
+        widget.isOnline) {
+      _retryBackoff.recordFailure();
+    }
+    _wasLoading = _controller.isLoading;
+    _lastLoadError = error;
+  }
+
+  // 수동 새로고침은 서버 응답을 요청하고 실패해도 현재 목록을 보존한다.
+  Future<void> _refresh() async {
+    _retryBackoff.cancel();
+    await _controller.load(fromServer: true);
     if (!mounted) return;
-    setState(() {
-      if (_controller.loadErrorMessage == null) {
-        _retryBackoff.recordSuccess();
-      } else {
-        _retryBackoff.recordFailure();
-      }
-    });
+    if (_controller.errorMessage != null) {
+      _showResult(false, successMessage: '');
+    }
+  }
+
+  // 연결이 복구되면 서버 목록을 다시 받아 캐시와 화면을 맞춘다.
+  @override
+  void didUpdateWidget(covariant TodoListScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.isOnline) _retryBackoff.cancel();
+    if (!oldWidget.isOnline && widget.isOnline) _refresh();
   }
 
   /// 서버와 동기화하는 할 일이 하나라도 있을 때만 동기화 배지를 보여준다.
@@ -72,16 +99,21 @@ class _TodoListScreenState extends State<TodoListScreen> {
   Widget? _buildSyncBadge() {
     final todos = _controller.todos;
     if (_controller.isLoading ||
-        todos.every((todo) => todo.syncStatus == TodoSyncStatus.localOnly)) {
+        (!_controller.isRemote &&
+            todos.every(
+              (todo) => todo.syncStatus == TodoSyncStatus.localOnly,
+            ))) {
       return null;
     }
-    final pendingCount = todos
-        .where(
-          (todo) =>
-              todo.syncStatus == TodoSyncStatus.pending ||
-              todo.syncStatus == TodoSyncStatus.failed,
-        )
-        .length;
+    final pendingCount =
+        _controller.syncPendingCount ??
+        todos
+            .where(
+              (todo) =>
+                  todo.syncStatus == TodoSyncStatus.pending ||
+                  todo.syncStatus == TodoSyncStatus.failed,
+            )
+            .length;
     return SyncStatusBadge(pendingCount: pendingCount);
   }
 
@@ -190,29 +222,47 @@ class _TodoListScreenState extends State<TodoListScreen> {
     }
 
     if (_controller.todos.isEmpty) {
-      return EmptyTodoView(onAdd: _addFirstTodo, onPhoto: _showPhotoComingSoon);
+      return RefreshIndicator(
+        onRefresh: _refresh,
+        child: EmptyTodoView(
+          onAdd: _addFirstTodo,
+          onPhoto: _showPhotoComingSoon,
+        ),
+      );
     }
 
     final todos = _controller.visibleTodos;
     if (todos.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.screenHorizontal,
-          AppSpacing.lg,
-          AppSpacing.screenHorizontal,
-          AppSpacing.xxl + AppSize.fab,
-        ),
-        child: Center(
-          child: EmptyPlaceholder.filtered(
-            onResetFilter: () => _controller.setFilter(TodoFilter.all),
+      return RefreshIndicator(
+        onRefresh: _refresh,
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: SizedBox(
+              height: constraints.maxHeight,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screenHorizontal,
+                  AppSpacing.lg,
+                  AppSpacing.screenHorizontal,
+                  AppSpacing.xxl + AppSize.fab,
+                ),
+                child: Center(
+                  child: EmptyPlaceholder.filtered(
+                    onResetFilter: () => _controller.setFilter(TodoFilter.all),
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       );
     }
 
     return RefreshIndicator(
-      onRefresh: _load,
+      onRefresh: _refresh,
       child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.screenHorizontal,
           AppSpacing.md,

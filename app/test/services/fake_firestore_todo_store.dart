@@ -13,6 +13,28 @@ class FakeFirestoreTodoStore implements FirestoreTodoStore {
   int? failImportNumber;
   Completer<void>? importGate;
   int _operation = 0;
+  final changes = StreamController<List<RemoteTodoDocument>>.broadcast();
+  int serverReads = 0;
+
+  @override
+  Stream<List<RemoteTodoDocument>> watchAll() => Stream.multi((controller) {
+    final subscription = changes.stream.listen(
+      controller.add,
+      onError: controller.addError,
+    );
+    controller.add(documents.values.toList());
+    controller.onCancel = subscription.cancel;
+  });
+
+  @override
+  Future<List<RemoteTodoDocument>> readServer() async {
+    serverReads++;
+    if (!isOnline) throw StateError('오프라인');
+    return readAll();
+  }
+
+  // 서버 응답·쓰기 확인에 따른 변경을 테스트에서 명시적으로 전달한다.
+  void emit() => changes.add(documents.values.toList());
 
   @override
   Future<List<RemoteTodoDocument>> readAll() async => documents.values.toList();
@@ -28,6 +50,7 @@ class FakeFirestoreTodoStore implements FirestoreTodoStore {
       data: Map.of(data),
       isPending: !isOnline,
     );
+    emit();
   }
 
   // 실서버 트랜잭션 대신 최신 수정·삭제 보존과 중간 실패를 재현한다.
