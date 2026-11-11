@@ -1,17 +1,23 @@
+/// 할 일의 중요 여부를 나타낸다.
 enum TodoImportance { important, unimportant }
 
+/// 할 일의 긴급 여부를 나타낸다.
 enum TodoUrgency { urgent, notUrgent }
 
+/// 할 일이 직접 입력되었는지 사진에서 만들어졌는지 나타낸다.
 enum TodoSource { manual, photo }
 
+/// 로컬 변경 사항이 원격 저장소와 동기화된 상태를 나타낸다.
 enum TodoSyncStatus { localOnly, pending, synced, failed }
 
+/// 중요도와 긴급도를 조합한 아이젠하워 사분면을 나타낸다.
 enum TodoQuadrant {
   doNow,
   schedule,
   delegate,
   eliminate;
 
+  /// 화면에 표시할 사분면 이름을 돌려준다.
   String get label => switch (this) {
     TodoQuadrant.doNow => '지금 한다',
     TodoQuadrant.schedule => '계획한다',
@@ -19,6 +25,7 @@ enum TodoQuadrant {
     TodoQuadrant.eliminate => '미뤄둔다',
   };
 
+  /// 사분면의 중요도와 긴급도 조합을 설명한다.
   String get description => switch (this) {
     TodoQuadrant.doNow => '중요 · 긴급',
     TodoQuadrant.schedule => '중요 · 비긴급',
@@ -27,7 +34,9 @@ enum TodoQuadrant {
   };
 }
 
+/// 제목과 분류, 완료 및 동기화 상태를 보관하는 할 일 모델이다.
 class Todo {
+  /// 저장된 값으로 변경할 수 없는 할 일을 만든다.
   const Todo({
     required this.id,
     required this.title,
@@ -43,6 +52,7 @@ class Todo {
     this.remoteId,
   });
 
+  /// 새 할 일에 식별자와 생성 시각의 기본값을 채워 만든다.
   factory Todo.create({
     required String title,
     required TodoImportance importance,
@@ -67,6 +77,7 @@ class Todo {
     );
   }
 
+  /// 로컬 데이터베이스 행을 할 일 모델로 복원한다.
   factory Todo.fromMap(Map<String, Object?> map) {
     return Todo(
       id: map['id']! as String,
@@ -97,9 +108,13 @@ class Todo {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// 이 할 일이 중요한 항목인지 알려준다.
   bool get isImportant => importance == TodoImportance.important;
+
+  /// 이 할 일이 긴급한 항목인지 알려준다.
   bool get isUrgent => urgency == TodoUrgency.urgent;
 
+  /// 현재 중요도와 긴급도에 해당하는 사분면을 돌려준다.
   TodoQuadrant get quadrant => switch ((importance, urgency)) {
     (TodoImportance.important, TodoUrgency.urgent) => TodoQuadrant.doNow,
     (TodoImportance.important, TodoUrgency.notUrgent) => TodoQuadrant.schedule,
@@ -108,6 +123,7 @@ class Todo {
       TodoQuadrant.eliminate,
   };
 
+  /// 지정한 값만 바꾼 새 할 일을 만들고 원본은 유지한다.
   Todo copyWith({
     String? remoteId,
     String? title,
@@ -137,6 +153,7 @@ class Todo {
     );
   }
 
+  /// [target] 사분면에 맞게 중요도와 긴급도를 바꾼 새 할 일을 돌려준다.
   Todo moveTo(TodoQuadrant target) {
     return switch (target) {
       TodoQuadrant.doNow => copyWith(
@@ -158,6 +175,7 @@ class Todo {
     };
   }
 
+  /// 할 일을 로컬 데이터베이스에 저장할 수 있는 값으로 변환한다.
   Map<String, Object?> toMap() {
     return <String, Object?>{
       'id': id,
@@ -175,6 +193,7 @@ class Todo {
     };
   }
 
+  /// 저장된 문자열 날짜를 복원하며 값이 없거나 잘못되었으면 null을 돌려준다.
   static DateTime? _dateFromMap(Object? value) {
     return value == null ? null : DateTime.tryParse(value as String);
   }
