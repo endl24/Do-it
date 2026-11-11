@@ -1,8 +1,15 @@
+import 'dart:io';
+
 import 'package:do_it/core/theme/app_spacing.dart';
 import 'package:do_it/core/theme/app_theme.dart';
 import 'package:do_it/models/todo.dart';
 import 'package:do_it/screens/home/widgets/empty_todo_view.dart';
+import 'package:do_it/screens/photo_import/candidate_review_screen.dart';
+import 'package:do_it/screens/photo_import/memo_capture_screen.dart';
+import 'package:do_it/screens/photo_import/permission_guide_screen.dart';
 import 'package:do_it/screens/todo_list/todo_list_screen.dart';
+import 'package:do_it/services/memo_scanner.dart';
+import 'package:do_it/services/permission_service.dart';
 import 'package:do_it/services/todo_repository.dart';
 import 'package:do_it/widgets/error_retry_card.dart';
 import 'package:do_it/widgets/offline_banner.dart';
@@ -38,15 +45,13 @@ void main() {
       expect((await repository.getAll()).single.title, '첫 할 일');
     });
 
-    testWidgets('[사진에서 가져오기]는 준비 중이라고 안내하고 화면을 바꾸지 않는다', (tester) async {
+    testWidgets('[사진에서 가져오기]는 06 메모 촬영을 연다', (tester) async {
       await _pumpScreen(tester, InMemoryTodoRepository());
 
       await tester.tap(find.text('사진에서 가져오기'));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      expect(find.text('사진에서 가져오기는 아직 준비 중입니다.'), findsOneWidget);
-      expect(find.byType(EmptyTodoView), findsOneWidget);
-      await tester.pumpAndSettle(const Duration(seconds: 5));
+      expect(find.byType(MemoCaptureScreen), findsOneWidget);
     });
 
     testWidgets('완료 필터에서 마지막 할 일을 지우고 추가해도 새 할 일이 보인다', (tester) async {
@@ -84,9 +89,8 @@ void main() {
       await tester.ensureVisible(photoButton);
       await tester.pumpAndSettle();
       await tester.tap(photoButton);
-      await tester.pump();
-      expect(find.text('사진에서 가져오기는 아직 준비 중입니다.'), findsOneWidget);
-      await tester.pumpAndSettle(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      expect(find.byType(MemoCaptureScreen), findsOneWidget);
     });
 
     testWidgets('불러오기에 실패하면 빈 상태 대신 오류 카드를 보여준다', (tester) async {
@@ -364,6 +368,70 @@ void main() {
     expect(find.text('빨리 끝낸다'), findsOneWidget);
     expect(find.text('미뤄둔다'), findsOneWidget);
   });
+
+  group('사진에서 가져오기', () {
+    testWidgets('01 헤더의 카메라 버튼으로 06을 연다', (tester) async {
+      await _pumpScreen(
+        tester,
+        InMemoryTodoRepository([_todo(id: 'a', title: '기존 할 일')]),
+      );
+
+      await tester.tap(find.byTooltip('사진에서 가져오기'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(MemoCaptureScreen), findsOneWidget);
+    });
+
+    testWidgets('카메라 권한이 없으면 09 권한 안내를 먼저 연다', (tester) async {
+      await _pumpScreen(
+        tester,
+        InMemoryTodoRepository(),
+        permissionService: _FakePermissionService(
+          AppPermissionStatus.permanentlyDenied,
+        ),
+      );
+
+      await tester.tap(find.text('사진에서 가져오기'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PermissionGuideScreen), findsOneWidget);
+      expect(find.byType(MemoCaptureScreen), findsNothing);
+    });
+
+    testWidgets('07에서 등록하면 사진 출처 할 일로 저장하고 목록에 안내한다', (tester) async {
+      final repository = InMemoryTodoRepository();
+      await _pumpScreen(tester, repository);
+
+      await tester.tap(find.text('사진에서 가져오기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel('촬영'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CandidateReviewScreen), findsOneWidget);
+
+      await tester.tap(find.text('선택한 2개 할 일로 등록'));
+      await tester.pumpAndSettle();
+
+      final saved = await repository.getAll();
+      expect(saved.map((todo) => todo.title), ['졸업 서류 제출', '도서관 책 반납']);
+      expect(saved.every((todo) => todo.source == TodoSource.photo), isTrue);
+      expect(saved.map((todo) => todo.id).toSet(), hasLength(2));
+      expect(find.byType(TodoListScreen), findsOneWidget);
+      expect(find.text('할 일 2개를 추가했습니다.'), findsOneWidget);
+      expect(find.text('졸업 서류 제출'), findsOneWidget);
+    });
+
+    testWidgets('06의 [직접 입력]은 사진 흐름을 닫고 등록 시트를 연다', (tester) async {
+      await _pumpScreen(tester, InMemoryTodoRepository());
+
+      await tester.tap(find.text('사진에서 가져오기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('직접 입력'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(MemoCaptureScreen), findsNothing);
+      expect(find.widgetWithText(FilledButton, '추가'), findsOneWidget);
+    });
+  });
 }
 
 class _LoadFailingTodoRepository extends InMemoryTodoRepository {
@@ -405,6 +473,8 @@ Future<void> _pumpScreen(
   WidgetTester tester,
   TodoRepository repository, {
   bool isOnline = true,
+  MemoScanner? scanner,
+  PermissionService? permissionService,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -414,6 +484,11 @@ Future<void> _pumpScreen(
         key: UniqueKey(),
         repository: repository,
         isOnline: isOnline,
+        // 기기 카메라·권한 플러그인을 부르지 않도록 항상 가짜를 넣는다.
+        memoScanner: scanner ?? _FakeScanner(),
+        permissionService:
+            permissionService ??
+            _FakePermissionService(AppPermissionStatus.granted),
       ),
     ),
   );
@@ -438,4 +513,54 @@ Todo _todo({
     createdAt: createdAt,
     updatedAt: createdAt,
   );
+}
+
+class _FakeScanner implements MemoScanner {
+  @override
+  bool get isRecognitionSupported => true;
+
+  @override
+  Future<void> startCamera() async {}
+
+  @override
+  Future<void> stopCamera() async {}
+
+  @override
+  Widget buildCameraPreview() => const ColoredBox(color: Colors.black);
+
+  @override
+  Future<File> takePicture() async => File('capture.jpg');
+
+  @override
+  Future<List<File>> pickFromAlbum() async => const [];
+
+  @override
+  Future<List<String>> recognizeLines(File image) async => const [
+    '이번 주 할 일',
+    '- 졸업 서류 제출',
+    '- 도서관 책 반납',
+  ];
+}
+
+class _FakePermissionService implements PermissionService {
+  _FakePermissionService(this.camera);
+
+  final AppPermissionStatus camera;
+
+  @override
+  Future<AppPermissionStatus> cameraStatus() async => camera;
+
+  @override
+  Future<AppPermissionStatus> requestCamera() async => camera;
+
+  @override
+  Future<AppPermissionStatus> notificationStatus() async =>
+      AppPermissionStatus.granted;
+
+  @override
+  Future<AppPermissionStatus> requestNotification() async =>
+      AppPermissionStatus.granted;
+
+  @override
+  Future<void> openAppSettings() async {}
 }
