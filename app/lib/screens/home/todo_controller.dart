@@ -6,9 +6,12 @@ import '../../models/todo.dart';
 import '../../services/live_todo_repository.dart';
 import '../../services/todo_repository.dart';
 
+/// 할 일 목록에 적용할 완료 상태 필터를 나타낸다.
 enum TodoFilter { all, incomplete, completed }
 
+/// 저장소의 할 일 목록과 조회·변경 상태를 화면에 전달한다.
 class TodoController extends ChangeNotifier {
+  /// 사용할 할 일 저장소를 받아 컨트롤러를 만든다.
   TodoController(this._repository);
 
   final TodoRepository _repository;
@@ -19,6 +22,7 @@ class TodoController extends ChangeNotifier {
   int _snapshotVersion = 0;
   int? syncPendingCount;
 
+  /// 실시간 원격 저장소를 사용하고 있는지 알려준다.
   bool get isRemote => _repository is LiveTodoRepository;
 
   bool isLoading = true;
@@ -30,8 +34,10 @@ class TodoController extends ChangeNotifier {
   String? errorMessage;
   TodoFilter filter = TodoFilter.all;
 
+  /// 외부에서 목록을 바꾸지 못하도록 읽기 전용 할 일 목록을 돌려준다.
   List<Todo> get todos => List<Todo>.unmodifiable(_todos);
 
+  /// 현재 필터에 해당하는 할 일만 모아 돌려준다.
   List<Todo> get visibleTodos {
     return switch (filter) {
       TodoFilter.all => todos,
@@ -42,16 +48,17 @@ class TodoController extends ChangeNotifier {
     };
   }
 
+  /// 완료하지 않은 할 일의 수를 돌려준다.
   int get incompleteCount => _todos.where((todo) => !todo.isCompleted).length;
 
-  // 중복 조회를 합치고 실시간 구독은 컨트롤러당 하나만 유지한다.
+  /// 중복 조회를 하나로 합치고 필요하면 서버에서 목록을 새로 요청한다.
   Future<void> load({bool fromServer = false}) {
     return _loading ??= _load(fromServer: fromServer).whenComplete(() {
       _loading = null;
     });
   }
 
-  // 늦게 끝난 조회가 더 최근에 도착한 실시간 목록을 덮어쓰지 않도록 한다.
+  /// 저장소 목록을 불러오되 늦은 응답이 최신 실시간 목록을 덮지 않게 한다.
   Future<void> _load({required bool fromServer}) async {
     _watch();
     final version = _snapshotVersion;
@@ -82,7 +89,7 @@ class TodoController extends ChangeNotifier {
     }
   }
 
-  // 다른 기기의 변경과 메타데이터 변경을 같은 목록에 반영한다.
+  /// 다른 기기의 변경과 동기화 메타데이터를 실시간 목록에 반영한다.
   void _watch() {
     final repository = _repository;
     if (repository is! LiveTodoRepository || _subscription != null) return;
@@ -107,7 +114,7 @@ class TodoController extends ChangeNotifier {
     );
   }
 
-  // 목록 교체 후 기존 정렬 규칙을 그대로 적용한다.
+  /// 현재 목록을 [todos]로 교체하고 화면 표시 순서로 정렬한다.
   void _replace(List<Todo> todos) {
     _todos
       ..clear()
@@ -115,7 +122,7 @@ class TodoController extends ChangeNotifier {
     _sort();
   }
 
-  // 계정 전환이나 화면 종료 후 이전 구독이 화면을 갱신하지 않도록 정리한다.
+  /// 실시간 구독을 취소해 화면 종료 뒤 목록이 갱신되지 않도록 한다.
   @override
   void dispose() {
     _isDisposed = true;
@@ -123,12 +130,14 @@ class TodoController extends ChangeNotifier {
     super.dispose();
   }
 
+  /// 목록에 적용할 필터를 [nextFilter]로 바꾸고 화면에 알린다.
   void setFilter(TodoFilter nextFilter) {
     if (filter == nextFilter) return;
     filter = nextFilter;
     notifyListeners();
   }
 
+  /// [todo]를 목록에 먼저 추가한 뒤 저장하며 실패하면 되돌린다.
   Future<bool> add(Todo todo) async {
     errorMessage = null;
     _todos.insert(0, todo);
@@ -137,6 +146,7 @@ class TodoController extends ChangeNotifier {
     return _persist(todo, rollback: () => _todos.remove(todo));
   }
 
+  /// 같은 식별자의 할 일을 [todo]로 바꾼 뒤 저장하며 실패하면 되돌린다.
   Future<bool> update(Todo todo) async {
     final index = _todos.indexWhere((item) => item.id == todo.id);
     if (index < 0) return false;
@@ -154,15 +164,18 @@ class TodoController extends ChangeNotifier {
     );
   }
 
+  /// [todo]의 완료 상태를 반대로 바꿔 저장한다.
   Future<bool> toggle(Todo todo) {
     return update(todo.copyWith(isCompleted: !todo.isCompleted));
   }
 
+  /// [todo]를 [target] 사분면으로 옮겨 저장한다.
   Future<bool> move(Todo todo, TodoQuadrant target) {
     if (todo.quadrant == target) return Future<bool>.value(true);
     return update(todo.moveTo(target));
   }
 
+  /// [todo]를 목록과 저장소에서 삭제하며 실패하면 원래 위치로 되돌린다.
   Future<bool> remove(Todo todo) async {
     final index = _todos.indexOf(todo);
     if (index < 0) return false;
@@ -182,6 +195,7 @@ class TodoController extends ChangeNotifier {
     }
   }
 
+  /// [date]에 마감하는 할 일만 모아 돌려준다.
   List<Todo> todosFor(DateTime date) {
     return _todos
         .where((todo) {
@@ -194,6 +208,7 @@ class TodoController extends ChangeNotifier {
         .toList(growable: false);
   }
 
+  /// [todo]를 저장하고 실패하면 [rollback]으로 화면 상태를 복구한다.
   Future<bool> _persist(Todo todo, {required VoidCallback rollback}) async {
     final version = _snapshotVersion;
     try {
@@ -209,6 +224,7 @@ class TodoController extends ChangeNotifier {
     }
   }
 
+  /// 미완료, 가까운 마감일, 최근 생성 순서로 목록을 정렬한다.
   void _sort() {
     _todos.sort((a, b) {
       if (a.isCompleted != b.isCompleted) return a.isCompleted ? 1 : -1;

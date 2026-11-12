@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../models/todo.dart';
 
+/// 할 일의 완료 상태와 사분면, 마감일을 한 장에 보여주는 카드다.
 class TodoCard extends StatelessWidget {
+  /// 표시할 [todo]와 완료 변경 및 상세 진입 동작을 받는다.
   const TodoCard({
     required this.todo,
     required this.onToggle,
@@ -14,6 +16,7 @@ class TodoCard extends StatelessWidget {
   final VoidCallback onToggle;
   final VoidCallback onTap;
 
+  /// 할 일 정보와 완료 체크박스를 포함한 카드를 구성한다.
   @override
   Widget build(BuildContext context) {
     final colors = _colorsFor(todo.quadrant);
@@ -104,6 +107,7 @@ class TodoCard extends StatelessWidget {
     );
   }
 
+  /// [quadrant]를 구분할 배경색과 글자색을 돌려준다.
   static (Color, Color) _colorsFor(TodoQuadrant quadrant) {
     return switch (quadrant) {
       TodoQuadrant.doNow => (const Color(0xFFF8E0DD), const Color(0xFFB84037)),
@@ -122,6 +126,7 @@ class TodoCard extends StatelessWidget {
     };
   }
 
+  /// [date]가 오늘과 같은 날짜인지 알려준다.
   static bool _isDueToday(DateTime? date) {
     if (date == null) return false;
     final now = DateTime.now();
@@ -130,6 +135,7 @@ class TodoCard extends StatelessWidget {
         date.day == now.day;
   }
 
+  /// [date]를 오늘·내일 또는 월일 형식의 마감 문구로 바꾼다.
   static String _dueLabel(DateTime? date) {
     if (date == null) return '마감일 없음';
     final now = DateTime.now();

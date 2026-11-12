@@ -8,6 +8,7 @@ import '../../widgets/sync_status_badge.dart';
 
 /// 05 사분면 조회. 하단 탭이 유지되도록 01 할 일 탭 안에서 목록 대신 보여준다.
 class TodoQuadrantView extends StatelessWidget {
+  /// 표시할 할 일과 상세 진입 및 사분면 이동 동작을 받는다.
   const TodoQuadrantView({
     required this.todos,
     required this.onOpenDetail,
@@ -19,6 +20,7 @@ class TodoQuadrantView extends StatelessWidget {
   final ValueChanged<Todo> onOpenDetail;
   final void Function(Todo todo, TodoQuadrant target) onMove;
 
+  /// 네 사분면과 카드 이동 안내를 2행 2열로 구성한다.
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -69,6 +71,7 @@ class TodoQuadrantView extends StatelessWidget {
     );
   }
 
+  /// [quadrant]에 속한 할 일만 모아 하나의 사분면 영역을 만든다.
   Widget _area(TodoQuadrant quadrant) {
     return _QuadrantArea(
       key: ValueKey('quadrant-${quadrant.name}'),
@@ -82,9 +85,12 @@ class TodoQuadrantView extends StatelessWidget {
   }
 }
 
+/// 카드를 길게 눌러 사분면 사이에서 옮길 수 있음을 안내한다.
 class _MoveGuide extends StatelessWidget {
+  /// 사분면 이동 안내를 만든다.
   const _MoveGuide();
 
+  /// 아이콘과 설명 문구가 있는 안내 상자를 구성한다.
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -119,7 +125,9 @@ class _MoveGuide extends StatelessWidget {
   }
 }
 
+/// 한 사분면의 제목과 건수, 할 일 카드를 표시하고 드롭을 받는 영역이다.
 class _QuadrantArea extends StatelessWidget {
+  /// 표시할 사분면과 할 일, 상세 및 이동 동작을 받는다.
   const _QuadrantArea({
     required this.quadrant,
     required this.todos,
@@ -133,6 +141,7 @@ class _QuadrantArea extends StatelessWidget {
   final ValueChanged<Todo> onOpenDetail;
   final ValueChanged<Todo> onMove;
 
+  /// 사분면 색상과 카드 목록을 표시하는 드롭 영역을 구성한다.
   @override
   Widget build(BuildContext context) {
     final colors = QuadrantColors.of(
@@ -227,11 +236,13 @@ class _QuadrantArea extends StatelessWidget {
     );
   }
 
+  /// 현재 사분면이 중요한 영역인지 알려준다.
   bool get _isImportant => switch (quadrant) {
     TodoQuadrant.doNow || TodoQuadrant.schedule => true,
     TodoQuadrant.delegate || TodoQuadrant.eliminate => false,
   };
 
+  /// 현재 사분면이 긴급한 영역인지 알려준다.
   bool get _isUrgent => switch (quadrant) {
     TodoQuadrant.doNow || TodoQuadrant.delegate => true,
     TodoQuadrant.schedule || TodoQuadrant.eliminate => false,
@@ -240,11 +251,13 @@ class _QuadrantArea extends StatelessWidget {
 
 /// 영역 칸이 좁아 제목만 보여준다. 분류는 영역이 이미 알려 주므로 태그가 필요 없다.
 class _QuadrantCard extends StatelessWidget {
+  /// 표시할 [todo]와 선택 동작을 받는다.
   const _QuadrantCard({required this.todo, this.onTap});
 
   final Todo todo;
   final VoidCallback? onTap;
 
+  /// 완료 및 동기화 상태와 제목만 간결하게 표시하는 카드를 구성한다.
   @override
   Widget build(BuildContext context) {
     return Card(
