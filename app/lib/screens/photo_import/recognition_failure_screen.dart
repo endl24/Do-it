@@ -15,6 +15,7 @@ import '../../widgets/status_message.dart';
 /// 뒤로 가기는 06을 건너뛰고 첫 화면(01 할 일 목록)까지 돌아간다.
 /// 화면을 벗어나면 어떤 경로든 [imageFile]을 삭제한다(A19).
 class RecognitionFailureScreen extends StatefulWidget {
+  /// 직접 입력 동작 [onManualEntry]와 연속 실패 횟수로 인식 실패 화면을 만든다.
   const RecognitionFailureScreen({
     super.key,
     required this.onManualEntry,
@@ -25,8 +26,7 @@ class RecognitionFailureScreen extends StatefulWidget {
   /// 이 횟수만큼 연속으로 실패하면 직접 입력을 권한다(B10).
   static const manyFailuresThreshold = 3;
 
-  /// [직접 입력으로 등록]을 눌렀을 때 03 할 일 등록으로 넘어간다(A17).
-  // TODO(강두이): 03 할 일 등록 화면이 생기면 여기서 바로 push한다.
+  /// [직접 입력으로 등록]을 눌렀을 때 부른다(A17). 부르는 쪽(01 할 일 목록)이 사진 흐름을 닫고 03 할 일 등록 시트를 연다.
   final VoidCallback onManualEntry;
 
   /// 연속으로 인식에 실패한 횟수. 06이 세고, 인식에 성공하면 초기화한다.
@@ -35,18 +35,25 @@ class RecognitionFailureScreen extends StatefulWidget {
   /// 인식에 실패한 촬영본. 저장하지 않고 화면을 벗어날 때 삭제한다.
   final File? imageFile;
 
+  /// 화면을 떠날 때 촬영본을 지울 상태를 만든다.
   @override
   State<RecognitionFailureScreen> createState() =>
       _RecognitionFailureScreenState();
 }
 
+/// 화면을 떠날 때 촬영본을 삭제하는 상태.
 class _RecognitionFailureScreenState extends State<RecognitionFailureScreen> {
+  /// 화면을 떠날 때 촬영본을 삭제한다(A19). 어떤 경로로 떠나도 여기서 지운다.
   @override
   void dispose() {
     widget.imageFile?.delete().ignore();
     super.dispose();
   }
 
+  /// 실패 안내, 다시 찍기 요령, 사진 미저장 안내와 아래 [다시 촬영]·[직접 입력으로 등록] 버튼을 그린다.
+  ///
+  /// 연속 실패가 [RecognitionFailureScreen.manyFailuresThreshold]번 이상이면 직접 입력을 권하는 안내를 더한다.
+  /// 뒤로 가기는 06을 건너뛰고 첫 화면까지 돌아간다.
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -105,7 +112,9 @@ class _RecognitionFailureScreenState extends State<RecognitionFailureScreen> {
   }
 }
 
+/// 다시 찍을 때 도움이 되는 요령 세 가지를 번호와 함께 보여 주는 카드.
 class _RetryTipsCard extends StatelessWidget {
+  /// 고정된 요령으로 카드를 만든다.
   const _RetryTipsCard();
 
   static const _tips = [
@@ -114,6 +123,7 @@ class _RetryTipsCard extends StatelessWidget {
     '한 번에 한 장만 인식하니 여러 장이면 나눠서 찍어 주세요',
   ];
 
+  /// 제목 아래에 요령을 번호 순서대로 그린다.
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -139,7 +149,9 @@ class _RetryTipsCard extends StatelessWidget {
   }
 }
 
+/// 원형 번호와 요령 문장을 나란히 놓은 한 줄.
 class _TipRow extends StatelessWidget {
+  /// 순서 [number]와 요령 [text]로 행을 만든다.
   const _TipRow({required this.number, required this.text});
 
   static const _badgeSize = 28.0;
@@ -147,6 +159,7 @@ class _TipRow extends StatelessWidget {
   final int number;
   final String text;
 
+  /// 왼쪽에 원형 번호, 오른쪽에 요령 문장을 그린다.
   @override
   Widget build(BuildContext context) {
     return Row(
