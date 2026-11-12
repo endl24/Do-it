@@ -6,10 +6,12 @@ import '../core/theme/app_spacing.dart';
 ///
 /// 버튼을 위에서 아래로 쌓는다. 예) [등록하기], [완료로 표시 / 삭제]
 class BottomActionBar extends StatelessWidget {
+  /// [children] 버튼들을 위에서 아래로 쌓는 하단 버튼 영역을 만든다.
   const BottomActionBar({super.key, required this.children});
 
   final List<Widget> children;
 
+  /// 홈 표시줄을 피해 여백을 두고, 버튼 사이에 간격을 넣어 세로로 쌓는다.
   @override
   Widget build(BuildContext context) {
     return SafeArea(

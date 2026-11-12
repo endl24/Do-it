@@ -6,6 +6,7 @@ import '../core/theme/app_typography.dart';
 
 /// 제목·설명과 오른쪽 체크박스로 켜고 끄는 카드. 예) `마감 알림 받기`, `알림 받기`
 class CheckTile extends StatelessWidget {
+  /// [value] 상태로 체크 카드를 만든다. [onChanged]가 `null`이면 누를 수 없다.
   const CheckTile({
     super.key,
     required this.title,
@@ -19,6 +20,7 @@ class CheckTile extends StatelessWidget {
   final bool value;
   final ValueChanged<bool>? onChanged;
 
+  /// 카드 어디를 눌러도 체크 상태가 바뀌도록 제목·설명과 체크박스를 한 줄에 그린다.
   @override
   Widget build(BuildContext context) {
     final isEnabled = onChanged != null;
