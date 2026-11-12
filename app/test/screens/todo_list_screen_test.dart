@@ -1,14 +1,23 @@
+import 'dart:io';
+
 import 'package:do_it/core/theme/app_spacing.dart';
 import 'package:do_it/core/theme/app_theme.dart';
 import 'package:do_it/models/todo.dart';
 import 'package:do_it/screens/home/widgets/empty_todo_view.dart';
+import 'package:do_it/screens/photo_import/candidate_review_screen.dart';
+import 'package:do_it/screens/photo_import/memo_capture_screen.dart';
+import 'package:do_it/screens/photo_import/permission_guide_screen.dart';
 import 'package:do_it/screens/todo_list/todo_list_screen.dart';
+import 'package:do_it/services/memo_scanner.dart';
+import 'package:do_it/services/permission_service.dart';
 import 'package:do_it/services/todo_repository.dart';
 import 'package:do_it/widgets/error_retry_card.dart';
 import 'package:do_it/widgets/offline_banner.dart';
 import 'package:do_it/widgets/sync_status_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'fake_photo_import.dart';
 
 void main() {
   group('02 빈 상태', () {
@@ -38,15 +47,13 @@ void main() {
       expect((await repository.getAll()).single.title, '첫 할 일');
     });
 
-    testWidgets('[사진에서 가져오기]는 준비 중이라고 안내하고 화면을 바꾸지 않는다', (tester) async {
+    testWidgets('[사진에서 가져오기]는 06 메모 촬영을 연다', (tester) async {
       await _pumpScreen(tester, InMemoryTodoRepository());
 
       await tester.tap(find.text('사진에서 가져오기'));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      expect(find.text('사진에서 가져오기는 아직 준비 중입니다.'), findsOneWidget);
-      expect(find.byType(EmptyTodoView), findsOneWidget);
-      await tester.pumpAndSettle(const Duration(seconds: 5));
+      expect(find.byType(MemoCaptureScreen), findsOneWidget);
     });
 
     testWidgets('완료 필터에서 마지막 할 일을 지우고 추가해도 새 할 일이 보인다', (tester) async {
@@ -84,9 +91,8 @@ void main() {
       await tester.ensureVisible(photoButton);
       await tester.pumpAndSettle();
       await tester.tap(photoButton);
-      await tester.pump();
-      expect(find.text('사진에서 가져오기는 아직 준비 중입니다.'), findsOneWidget);
-      await tester.pumpAndSettle(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      expect(find.byType(MemoCaptureScreen), findsOneWidget);
     });
 
     testWidgets('불러오기에 실패하면 빈 상태 대신 오류 카드를 보여준다', (tester) async {
@@ -364,6 +370,128 @@ void main() {
     expect(find.text('빨리 끝낸다'), findsOneWidget);
     expect(find.text('미뤄둔다'), findsOneWidget);
   });
+
+  group('사진에서 가져오기', () {
+    testWidgets('01 헤더의 카메라 버튼으로 06을 연다', (tester) async {
+      await _pumpScreen(
+        tester,
+        InMemoryTodoRepository([_todo(id: 'a', title: '기존 할 일')]),
+      );
+
+      await tester.tap(find.byTooltip('사진에서 가져오기'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(MemoCaptureScreen), findsOneWidget);
+    });
+
+    testWidgets('카메라 권한이 없으면 09 권한 안내를 먼저 연다', (tester) async {
+      await _pumpScreen(
+        tester,
+        InMemoryTodoRepository(),
+        permissionService: FakePermissionService(
+          AppPermissionStatus.permanentlyDenied,
+        ),
+      );
+
+      await tester.tap(find.text('사진에서 가져오기'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PermissionGuideScreen), findsOneWidget);
+      expect(find.byType(MemoCaptureScreen), findsNothing);
+    });
+
+    testWidgets('07에서 등록하면 사진 출처 할 일로 저장하고 목록에 안내한다', (tester) async {
+      final repository = InMemoryTodoRepository();
+      await _pumpScreen(tester, repository);
+
+      await tester.tap(find.text('사진에서 가져오기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel('촬영'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CandidateReviewScreen), findsOneWidget);
+
+      await tester.tap(find.text('선택한 2개 할 일로 등록'));
+      await tester.pumpAndSettle();
+
+      final saved = await repository.getAll();
+      expect(saved.map((todo) => todo.title), ['졸업 서류 제출', '도서관 책 반납']);
+      expect(saved.every((todo) => todo.source == TodoSource.photo), isTrue);
+      expect(saved.map((todo) => todo.id).toSet(), hasLength(2));
+      expect(find.byType(TodoListScreen), findsOneWidget);
+      expect(find.text('할 일 2개를 추가했습니다.'), findsOneWidget);
+      expect(find.text('졸업 서류 제출'), findsOneWidget);
+    });
+
+    testWidgets('07에서 고치고 뺀 결과를 메모 순서대로 저장하고 사진을 지운다 (#36)', (tester) async {
+      final picture = File(
+        '${Directory.systemTemp.createTempSync('photo_import_test').path}/memo.jpg',
+      )..writeAsBytesSync([1, 2, 3]);
+      addTearDown(() => picture.parent.deleteSync(recursive: true));
+      final repository = InMemoryTodoRepository([
+        _todo(id: 'old', title: '기존 할 일'),
+      ]);
+      await _pumpScreen(
+        tester,
+        repository,
+        scanner: FakeMemoScanner(
+          lines: ['이번 주 할 일', '- 졸업 서류 제출', '- 도서관 책 반납', '- 팀 회의 자료 준비'],
+          picture: picture,
+        ),
+      );
+
+      await tester.tap(find.byTooltip('사진에서 가져오기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel('촬영'));
+      await tester.pumpAndSettle();
+      // 첫 문장을 고치고, 둘째 문장은 뺀다.
+      await tester.tap(find.text('졸업 서류 제출'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '졸업 서류 제출하기');
+      await tester.tap(find.byType(Checkbox).at(2));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('선택한 2개 할 일로 등록'));
+      await tester.runAsync(() async {
+        // 07이 닫히며 지우는 파일 삭제는 실제 파일 입출력이라 시간을 흘려 준다.
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      });
+      await tester.pumpAndSettle();
+
+      final photoTodos = (await repository.getAll())
+          .where((todo) => todo.source == TodoSource.photo)
+          .map((todo) => todo.title);
+      expect(photoTodos, unorderedEquals(['졸업 서류 제출하기', '팀 회의 자료 준비']));
+      // 목록 맨 위에 메모 순서대로 보인다.
+      final cardTitles = tester
+          .widgetList<Text>(
+            find.descendant(
+              of: find.byType(TodoListScreen),
+              matching: find.byType(Text),
+            ),
+          )
+          .map((text) => text.data)
+          .where(
+            (title) => ['졸업 서류 제출하기', '팀 회의 자료 준비', '기존 할 일'].contains(title),
+          )
+          .toList();
+      expect(cardTitles, ['졸업 서류 제출하기', '팀 회의 자료 준비', '기존 할 일']);
+      await tester.runAsync(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      });
+      expect(picture.existsSync(), isFalse);
+    });
+
+    testWidgets('06의 [직접 입력]은 사진 흐름을 닫고 등록 시트를 연다', (tester) async {
+      await _pumpScreen(tester, InMemoryTodoRepository());
+
+      await tester.tap(find.text('사진에서 가져오기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('직접 입력'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(MemoCaptureScreen), findsNothing);
+      expect(find.widgetWithText(FilledButton, '추가'), findsOneWidget);
+    });
+  });
 }
 
 class _LoadFailingTodoRepository extends InMemoryTodoRepository {
@@ -405,6 +533,8 @@ Future<void> _pumpScreen(
   WidgetTester tester,
   TodoRepository repository, {
   bool isOnline = true,
+  MemoScanner? scanner,
+  PermissionService? permissionService,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -414,6 +544,11 @@ Future<void> _pumpScreen(
         key: UniqueKey(),
         repository: repository,
         isOnline: isOnline,
+        // 기기 카메라·권한 플러그인을 부르지 않도록 항상 가짜를 넣는다.
+        memoScanner: scanner ?? FakeMemoScanner(),
+        permissionService:
+            permissionService ??
+            FakePermissionService(AppPermissionStatus.granted),
       ),
     ),
   );

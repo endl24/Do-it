@@ -4,6 +4,10 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>종이 메모를 찍어 할 일로 옮기는 데 카메라를 사용합니다. 사진은 기기 안에서만 처리되고 저장되지 않습니다.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>앨범에서 고른 메모 사진의 글자를 읽는 데 사용합니다. 사진은 기기 안에서만 처리되고 저장되지 않습니다.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

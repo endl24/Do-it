@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/retry_backoff.dart';
 import '../../models/todo.dart';
+import '../../services/device_memo_scanner.dart';
+import '../../services/device_permission_service.dart';
+import '../../services/memo_scanner.dart';
+import '../../services/permission_service.dart';
 import '../../services/sqlite_todo_repository.dart';
 import '../../services/todo_repository.dart';
 import '../../widgets/confirm_dialog.dart';
@@ -15,15 +19,28 @@ import '../../widgets/sync_status_badge.dart';
 import '../../widgets/todo_card.dart';
 import '../home/todo_controller.dart';
 import '../home/widgets/empty_todo_view.dart';
+import '../photo_import/memo_capture_screen.dart';
 import '../todo_detail/todo_detail_screen.dart';
 import '../todo_quadrant/todo_quadrant_view.dart';
 import 'todo_form_sheet.dart';
 import 'widgets/todo_view_switcher.dart';
 
 class TodoListScreen extends StatefulWidget {
-  const TodoListScreen({super.key, this.repository, this.isOnline = true});
+  const TodoListScreen({
+    super.key,
+    this.repository,
+    this.isOnline = true,
+    this.memoScanner,
+    this.permissionService,
+  });
 
   final TodoRepository? repository;
+
+  /// 사진에서 가져오기(06)에 쓸 카메라·글자 인식. 없으면 기기 구현체를 쓴다.
+  final MemoScanner? memoScanner;
+
+  /// 06 진입 전 카메라 권한 확인(09). 없으면 기기 구현체를 쓴다.
+  final PermissionService? permissionService;
 
   /// `false`면 목록 위에 오프라인 배너를 띄운다 (E1).
   final bool isOnline;
@@ -117,6 +134,23 @@ class _TodoListScreenState extends State<TodoListScreen> {
     return SyncStatusBadge(pendingCount: pendingCount);
   }
 
+  /// 동기화 배지와 사진에서 가져오기 버튼. 02에서는 빈 상태의 버튼이 진입을 맡는다.
+  Widget? _buildHeaderActions() {
+    final badge = _buildSyncBadge();
+    if (_isEmptyState) return badge;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ?badge,
+        IconButton(
+          onPressed: _openPhotoImport,
+          tooltip: '사진에서 가져오기',
+          icon: const Icon(Icons.photo_camera_outlined),
+        ),
+      ],
+    );
+  }
+
   /// 불러오기까지 끝났는데 할 일이 한 건도 없는 02 빈 상태인지.
   /// 필터로 가려져 안 보이는 경우는 해당하지 않는다.
   /// 사분면 보기에서는 전환 세그먼트를 유지하도록 네 영역의 '아직 없음'으로 보여준다.
@@ -146,7 +180,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
                       : _isQuadrantMode
                       ? '중요도와 긴급도에 따라 할 일을 나눠 봅니다'
                       : '남은 할 일 ${_controller.incompleteCount}개',
-                  trailing: _buildSyncBadge(),
+                  trailing: _buildHeaderActions(),
                 ),
                 if (!isEmptyState)
                   TodoViewSwitcher(
@@ -224,10 +258,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     if (_controller.todos.isEmpty) {
       return RefreshIndicator(
         onRefresh: _refresh,
-        child: EmptyTodoView(
-          onAdd: _addFirstTodo,
-          onPhoto: _showPhotoComingSoon,
-        ),
+        child: EmptyTodoView(onAdd: _addFirstTodo, onPhoto: _openPhotoImport),
       );
     }
 
@@ -297,11 +328,58 @@ class _TodoListScreenState extends State<TodoListScreen> {
     _openForm();
   }
 
-  // TODO(강두이): 카메라·글자 인식 구현체가 생기면 MemoCaptureScreen.open으로 바꾼다.
-  void _showPhotoComingSoon() {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('사진에서 가져오기는 아직 준비 중입니다.')));
+  /// 06 메모 촬영을 연다. 카메라 권한이 없으면 09 권한 안내를 먼저 띄운다(A14 A18).
+  Future<void> _openPhotoImport() async {
+    var addedCount = 0;
+    await MemoCaptureScreen.open(
+      context,
+      permissionService:
+          widget.permissionService ?? const DevicePermissionService(),
+      scanner: widget.memoScanner ?? DeviceMemoScanner(),
+      onManualEntry: _openManualEntryFromPhoto,
+      onRegister: (titles) async {
+        addedCount = await _addPhotoTodos(titles);
+      },
+    );
+    if (!mounted || addedCount == 0) return;
+    _showResult(true, successMessage: '할 일 $addedCount개를 추가했습니다.');
+  }
+
+  /// 07에서 고른 제목을 사진 출처 할 일로 저장한다. 하나라도 실패하면 예외를 던져 07이 안내한다.
+  Future<int> _addPhotoTodos(List<String> titles) async {
+    var added = 0;
+    final now = DateTime.now();
+    for (final (index, title) in titles.indexed) {
+      // 목록은 최근 만든 순서라, 메모 첫 줄이 맨 위에 오도록 뒷줄일수록 조금 앞선 시각을 준다.
+      final createdAt = now.subtract(Duration(microseconds: index));
+      final succeeded = await _controller.add(
+        Todo(
+          // 한꺼번에 만들어 시각이 겹쳐도 ID가 같아지지 않게 순번을 붙인다.
+          id: '${now.microsecondsSinceEpoch}_$index',
+          title: title.trim(),
+          // 03 등록 폼의 기본값과 같다.
+          importance: TodoImportance.important,
+          urgency: TodoUrgency.urgent,
+          isCompleted: false,
+          reminderEnabled: false,
+          source: TodoSource.photo,
+          syncStatus: TodoSyncStatus.localOnly,
+          createdAt: createdAt,
+          updatedAt: createdAt,
+        ),
+      );
+      if (!succeeded) {
+        throw StateError(_controller.errorMessage ?? '할 일을 저장하지 못했습니다.');
+      }
+      added++;
+    }
+    return added;
+  }
+
+  /// 06·08의 [직접 입력]: 사진 흐름을 모두 닫고 03 등록 시트를 연다.
+  void _openManualEntryFromPhoto() {
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    _openForm();
   }
 
   Future<void> _openForm([Todo? todo]) async {

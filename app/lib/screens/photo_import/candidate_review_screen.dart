@@ -30,8 +30,8 @@ class CandidateReviewScreen extends StatefulWidget {
   /// 인식에 사용한 촬영본. 미리보기로 보여주고 화면을 벗어날 때 삭제한다.
   final File? imageFile;
 
-  /// 선택한 제목들을 할 일로 저장한다.
-  // TODO(강두이): 공통 모델(A7)이 정해지면 저장소에 바로 저장하도록 바꾼다.
+  /// 선택한 제목들을 할 일로 저장한다. 01 할 일 목록이 저장소에 `photo` 출처로 저장하고,
+  /// 실패하면 예외를 던져 이 화면에 남아 다시 시도하게 한다.
   final Future<void> Function(List<String> titles) onRegister;
 
   @override
