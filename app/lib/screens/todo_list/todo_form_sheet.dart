@@ -6,15 +6,19 @@ import '../../core/theme/app_typography.dart';
 import '../../models/todo.dart';
 import '../../widgets/confirm_dialog.dart';
 
+/// 할 일 입력 시트에서 저장 또는 삭제 요청을 전달하는 결과다.
 class TodoFormResult {
+  /// 저장할 [todo]를 담은 결과를 만든다.
   const TodoFormResult.save(this.todo) : shouldDelete = false;
 
+  /// 기존 할 일을 삭제하도록 요청하는 결과를 만든다.
   const TodoFormResult.delete() : todo = null, shouldDelete = true;
 
   final Todo? todo;
   final bool shouldDelete;
 }
 
+/// 할 일 추가 또는 수정 시트를 열고 사용자의 저장·삭제 결과를 돌려준다.
 Future<TodoFormResult?> showTodoFormSheet(BuildContext context, {Todo? todo}) {
   return showModalBottomSheet<TodoFormResult>(
     context: context,
@@ -24,6 +28,7 @@ Future<TodoFormResult?> showTodoFormSheet(BuildContext context, {Todo? todo}) {
   );
 }
 
+/// [title]의 할 일을 삭제할지 확인하고 선택 결과를 돌려준다.
 Future<bool> showDeleteTodoDialog(BuildContext context, String title) {
   return showConfirmDialog(
     context,
@@ -44,15 +49,19 @@ String _objectParticle(String text) {
   return (code - firstSyllable) % 28 == 0 ? '를' : '을';
 }
 
+/// 할 일 값을 입력받아 새 항목을 만들거나 기존 항목을 수정하는 시트다.
 class _TodoForm extends StatefulWidget {
+  /// [todo]가 있으면 수정용, 없으면 추가용 입력 시트를 만든다.
   const _TodoForm({this.todo});
 
   final Todo? todo;
 
+  /// 입력값과 선택 상태를 관리하는 상태 객체를 만든다.
   @override
   State<_TodoForm> createState() => _TodoFormState();
 }
 
+/// 제목과 분류, 마감일 및 알림 입력 상태를 관리한다.
 class _TodoFormState extends State<_TodoForm> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleController;
@@ -61,6 +70,7 @@ class _TodoFormState extends State<_TodoForm> {
   late DateTime? _dueDate;
   late bool _reminderEnabled;
 
+  /// 기존 할 일 값 또는 새 할 일 기본값으로 입력 상태를 준비한다.
   @override
   void initState() {
     super.initState();
@@ -72,12 +82,14 @@ class _TodoFormState extends State<_TodoForm> {
     _reminderEnabled = todo?.reminderEnabled ?? false;
   }
 
+  /// 제목 입력 컨트롤러가 사용한 자원을 해제한다.
   @override
   void dispose() {
     _titleController.dispose();
     super.dispose();
   }
 
+  /// 할 일 입력 항목과 저장·삭제 동작을 갖춘 시트를 구성한다.
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
@@ -209,6 +221,7 @@ class _TodoFormState extends State<_TodoForm> {
     );
   }
 
+  /// 날짜 선택기를 열고 고른 날짜를 마감일에 반영한다.
   Future<void> _pickDate() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
@@ -220,6 +233,7 @@ class _TodoFormState extends State<_TodoForm> {
     if (picked != null && mounted) setState(() => _dueDate = picked);
   }
 
+  /// 입력을 검증해 새 할 일 또는 수정된 할 일을 호출 화면에 돌려준다.
   void _save() {
     if (!_formKey.currentState!.validate()) return;
     final current = widget.todo;
@@ -242,13 +256,16 @@ class _TodoFormState extends State<_TodoForm> {
     Navigator.of(context).pop(TodoFormResult.save(todo));
   }
 
+  /// [date]를 연월일 문구로 바꾸며 값이 없으면 설정되지 않았음을 알린다.
   static String _dateLabel(DateTime? date) {
     if (date == null) return '설정 안 함';
     return '${date.year}년 ${date.month}월 ${date.day}일';
   }
 }
 
+/// 하나의 분류 값을 세그먼트 버튼으로 선택하는 입력 영역이다.
 class _SelectionSection<T> extends StatelessWidget {
+  /// 항목 이름과 현재 값, 선택지 및 변경 처리 함수를 받는다.
   const _SelectionSection({
     required this.label,
     required this.value,
@@ -261,6 +278,7 @@ class _SelectionSection<T> extends StatelessWidget {
   final List<ButtonSegment<T>> segments;
   final ValueChanged<T> onChanged;
 
+  /// 항목 이름과 선택 가능한 세그먼트 버튼을 세로로 구성한다.
   @override
   Widget build(BuildContext context) {
     return Column(
