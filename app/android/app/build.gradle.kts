@@ -47,3 +47,8 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // 단말 내 글자 인식(MP4). 모델이 APK에 들어가는 번들판이라 비행기 모드에서도 동작한다.
+    implementation("com.google.mlkit:text-recognition-korean:16.0.1")
+}

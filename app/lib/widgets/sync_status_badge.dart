@@ -6,10 +6,12 @@ import '../core/theme/app_typography.dart';
 
 /// 서버 동기화 상태 배지. 대기 중인 변경이 있으면 `동기화 대기 N`, 없으면 `동기화 완료`.
 class SyncStatusBadge extends StatelessWidget {
+  /// 동기화 대기 중인 변경 수 [pendingCount]로 배지를 만든다.
   const SyncStatusBadge({super.key, required this.pendingCount});
 
   final int pendingCount;
 
+  /// 대기 중인 변경이 있으면 주황 색으로 개수를, 없으면 기본 색으로 `동기화 완료`를 그린다.
   @override
   Widget build(BuildContext context) {
     final isPending = pendingCount > 0;
@@ -48,11 +50,13 @@ class SyncStatusBadge extends StatelessWidget {
 
 /// 상태를 나타내는 작은 원. 동기화 대기 표시, 캘린더 마감 표시 등에 쓴다.
 class StatusDot extends StatelessWidget {
+  /// [color] 색의 점을 만든다. [size]가 없으면 기본 크기를 쓴다.
   const StatusDot({super.key, required this.color, this.size});
 
   final Color color;
   final double? size;
 
+  /// 지정한 크기의 원을 그린다.
   @override
   Widget build(BuildContext context) {
     final dotSize = size ?? AppSize.statusDot;

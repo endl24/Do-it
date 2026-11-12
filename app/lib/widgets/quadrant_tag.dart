@@ -6,6 +6,7 @@ import '../core/theme/app_typography.dart';
 
 /// 사분면 태그. 예) `중요 · 긴급`
 class QuadrantTag extends StatelessWidget {
+  /// 중요도·긴급도에 맞는 사분면 색 태그를 만든다.
   const QuadrantTag({
     super.key,
     required this.isImportant,
@@ -21,9 +22,11 @@ class QuadrantTag extends StatelessWidget {
   final bool isUrgent;
   final String? label;
 
+  /// 중요도·긴급도에 맞는 태그 글자를 돌려준다. 예) `중요 · 긴급`
   static String labelOf({required bool isImportant, required bool isUrgent}) =>
       '${isImportant ? '중요' : '비중요'} · ${isUrgent ? '긴급' : '비긴급'}';
 
+  /// 회색 태그면 [label]을, 아니면 사분면 색과 글자로 작은 태그를 그린다.
   @override
   Widget build(BuildContext context) {
     final isNeutral = label != null;

@@ -18,6 +18,7 @@ import 'todo_candidate.dart';
 /// 등록이 끝나면 첫 화면(01 할 일 목록)까지 돌아간다.
 /// 화면을 벗어나면 어떤 경로든 [imageFile]을 삭제한다(A19·C4).
 class CandidateReviewScreen extends StatefulWidget {
+  /// 인식한 후보 [candidates]와 등록 동작 [onRegister]로 후보 검토 화면을 만든다.
   const CandidateReviewScreen({
     super.key,
     required this.candidates,
@@ -30,14 +31,16 @@ class CandidateReviewScreen extends StatefulWidget {
   /// 인식에 사용한 촬영본. 미리보기로 보여주고 화면을 벗어날 때 삭제한다.
   final File? imageFile;
 
-  /// 선택한 제목들을 할 일로 저장한다.
-  // TODO(강두이): 공통 모델(A7)이 정해지면 저장소에 바로 저장하도록 바꾼다.
+  /// 선택한 제목들을 할 일로 저장한다. 01 할 일 목록이 저장소에 `photo` 출처로 저장하고,
+  /// 실패하면 예외를 던져 이 화면에 남아 다시 시도하게 한다.
   final Future<void> Function(List<String> titles) onRegister;
 
+  /// 후보별 문장·선택 여부를 관리할 상태를 만든다.
   @override
   State<CandidateReviewScreen> createState() => _CandidateReviewScreenState();
 }
 
+/// 후보 문장과 선택 여부, 지금 고치는 후보, 등록 진행 여부를 들고 있는 상태.
 class _CandidateReviewScreenState extends State<CandidateReviewScreen> {
   static const _maxTitleLength = 100;
 
@@ -48,9 +51,11 @@ class _CandidateReviewScreenState extends State<CandidateReviewScreen> {
   int? _editingIndex;
   bool _isRegistering = false;
 
+  /// 지금 선택된 후보 수를 돌려준다.
   int get _selectedCount =>
       _isSelected.where((isSelected) => isSelected).length;
 
+  /// 후보 문장을 앞뒤 공백을 지우고 100자까지 자른 뒤 담고, 제목으로 보이는 후보만 빼고 모두 선택해 둔다.
   @override
   void initState() {
     super.initState();
@@ -63,6 +68,7 @@ class _CandidateReviewScreenState extends State<CandidateReviewScreen> {
     ];
   }
 
+  /// 화면을 떠날 때 입력 도구를 정리하고 촬영본을 삭제한다(A19·C4). 어떤 경로로 떠나도 여기서 지운다.
   @override
   void dispose() {
     _editController.dispose();
@@ -71,9 +77,11 @@ class _CandidateReviewScreenState extends State<CandidateReviewScreen> {
     super.dispose();
   }
 
+  /// [text]가 제목 최대 길이(100자)를 넘으면 앞에서부터 그 길이만큼만 남긴다.
   String _truncate(String text) =>
       text.length > _maxTitleLength ? text.substring(0, _maxTitleLength) : text;
 
+  /// [index]번 후보를 고치기 시작한다. 다른 후보를 고치던 중이었으면 그 내용을 먼저 반영한다.
   void _startEditing(int index) {
     _finishEditing();
     setState(() {
@@ -83,6 +91,7 @@ class _CandidateReviewScreenState extends State<CandidateReviewScreen> {
     _editFocusNode.requestFocus();
   }
 
+  /// 고치던 후보의 입력 내용을 반영하고 고치기를 끝낸다. 고치는 후보가 없으면 아무것도 하지 않는다.
   void _finishEditing() {
     final index = _editingIndex;
     if (index == null) return;
@@ -95,6 +104,9 @@ class _CandidateReviewScreenState extends State<CandidateReviewScreen> {
     });
   }
 
+  /// 고치던 내용을 반영한 뒤 선택한 후보 문장들을 등록하고, 성공하면 첫 화면(01)까지 돌아간다.
+  ///
+  /// 등록에 실패하면 이 화면에 남아 버튼을 다시 누를 수 있게 하고 다시 시도하라고 안내한다.
   Future<void> _register() async {
     _finishEditing();
     final titles = [
@@ -116,6 +128,7 @@ class _CandidateReviewScreenState extends State<CandidateReviewScreen> {
     }
   }
 
+  /// 인식 결과를 버릴지 묻고, 버리기를 고르면 06으로 돌아간다.
   Future<void> _confirmDiscard() async {
     final isConfirmed = await showConfirmDialog(
       context,
@@ -127,6 +140,9 @@ class _CandidateReviewScreenState extends State<CandidateReviewScreen> {
     if (isConfirmed && mounted) Navigator.of(context).pop();
   }
 
+  /// 요약, 후보 목록, 사진 미저장 안내와 아래 [등록]·[다시 촬영] 버튼을 그린다.
+  ///
+  /// 뒤로 가기는 바로 닫지 않고 결과를 버릴지 먼저 묻는다. 등록 중에는 뒤로 가기와 버튼을 막는다.
   @override
   Widget build(BuildContext context) {
     final selectedCount = _selectedCount;
@@ -200,7 +216,9 @@ class _CandidateReviewScreenState extends State<CandidateReviewScreen> {
   }
 }
 
+/// 촬영본 미리보기와 찾은 문장 수를 보여 주는 화면 맨 위 요약.
 class _ReviewSummary extends StatelessWidget {
+  /// 미리보기 사진 [imageFile]과 찾은 문장 수로 요약을 만든다.
   const _ReviewSummary({required this.imageFile, required this.candidateCount});
 
   static const _thumbnailSize = 72.0;
@@ -208,6 +226,7 @@ class _ReviewSummary extends StatelessWidget {
   final File? imageFile;
   final int candidateCount;
 
+  /// 왼쪽에 사진 미리보기(없거나 읽지 못하면 그림 아이콘)를, 오른쪽에 찾은 문장 수와 안내를 그린다.
   @override
   Widget build(BuildContext context) {
     const placeholder = Icon(
@@ -261,7 +280,9 @@ class _ReviewSummary extends StatelessWidget {
   }
 }
 
+/// 후보 하나를 선택하고 고칠 수 있는 행.
 class _CandidateTile extends StatelessWidget {
+  /// 후보 문장, 선택·고치기 상태, 입력 도구, 각 동작으로 행을 만든다.
   const _CandidateTile({
     required this.text,
     required this.isSelected,
@@ -288,6 +309,9 @@ class _CandidateTile extends StatelessWidget {
   final VoidCallback onEditPressed;
   final VoidCallback onEditDone;
 
+  /// 체크박스, 문장(또는 고치는 중이면 입력칸), 고치기 버튼을 한 줄에 그린다.
+  ///
+  /// 제목처럼 보여 해제된 후보는 점선 상자로, 고치는 중인 후보는 기본 색 테두리로 구분한다.
   @override
   Widget build(BuildContext context) {
     final content = Row(
@@ -349,7 +373,9 @@ class _CandidateTile extends StatelessWidget {
   }
 }
 
+/// 고치는 중이 아닐 때 후보 문장을 보여 주는 글자.
 class _CandidateText extends StatelessWidget {
+  /// 문장과 선택·제목 제외 여부로 글자를 만든다.
   const _CandidateText({
     required this.text,
     required this.isSelected,
@@ -360,6 +386,7 @@ class _CandidateText extends StatelessWidget {
   final bool isSelected;
   final bool isExcludedTitle;
 
+  /// 선택한 후보는 굵게, 해제한 후보는 옅게 그리고, 제목이라 해제된 후보에는 그 이유를 덧붙인다.
   @override
   Widget build(BuildContext context) {
     final textStyle = isSelected
@@ -392,7 +419,9 @@ class _CandidateText extends StatelessWidget {
   }
 }
 
+/// 후보 문장을 그 자리에서 고치는 입력칸.
 class _CandidateEditor extends StatelessWidget {
+  /// 입력 도구, 최대 글자 수, 고치기를 끝낼 때 동작으로 입력칸을 만든다.
   const _CandidateEditor({
     required this.controller,
     required this.focusNode,
@@ -405,6 +434,9 @@ class _CandidateEditor extends StatelessWidget {
   final int maxLength;
   final VoidCallback onDone;
 
+  /// 최대 글자 수까지만 입력받는 입력칸과 그 아래 글자 수를 그린다.
+  ///
+  /// 완료 키를 누르거나 입력칸 밖을 누르면 고치기를 끝낸다. 최대 길이에 닿으면 글자 수 대신 제한 안내를 빨간 글자로 보여 준다.
   @override
   Widget build(BuildContext context) {
     return Column(

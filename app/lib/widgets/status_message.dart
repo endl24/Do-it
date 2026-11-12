@@ -6,6 +6,7 @@ import '../core/theme/app_typography.dart';
 
 /// 화면 가운데에 크게 보여주는 상태 안내. 예) 빈 할 일 목록, 텍스트 인식 실패
 class StatusMessage extends StatelessWidget {
+  /// [title]과 선택 [description]·[illustration]으로 상태 안내를 만든다.
   const StatusMessage({
     super.key,
     required this.title,
@@ -27,6 +28,7 @@ class StatusMessage extends StatelessWidget {
     bool isError = false,
   }) : illustration = _IconCircle(icon: icon, isError: isError);
 
+  /// 그림, 제목, 설명을 가운데 정렬로 세로로 쌓는다.
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -56,7 +58,9 @@ class StatusMessage extends StatelessWidget {
   }
 }
 
+/// 상태 안내 위에 두는 원형 배경 아이콘.
 class _IconCircle extends StatelessWidget {
+  /// 보여 줄 [icon]과 오류 여부로 원형 아이콘을 만든다.
   const _IconCircle({required this.icon, required this.isError});
 
   static const _size = 96.0;
@@ -64,6 +68,7 @@ class _IconCircle extends StatelessWidget {
   final IconData icon;
   final bool isError;
 
+  /// 오류면 빨간 색, 아니면 기본 색으로 원과 아이콘을 그린다.
   @override
   Widget build(BuildContext context) {
     return Container(

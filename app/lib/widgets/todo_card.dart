@@ -10,6 +10,7 @@ import 'sync_status_badge.dart';
 ///
 /// 데이터 모델에 묶이지 않도록 화면에서 필요한 값만 넘겨받는다.
 class TodoCard extends StatelessWidget {
+  /// 화면에서 넘겨받은 제목·사분면·완료 상태로 할 일 카드를 만든다.
   const TodoCard({
     super.key,
     required this.title,
@@ -44,6 +45,9 @@ class TodoCard extends StatelessWidget {
   final ValueChanged<bool>? onDoneChanged;
   final VoidCallback? onTap;
 
+  /// 체크박스, 제목, 태그·보조 글자, 동기화 대기 점을 한 줄에 그린다.
+  ///
+  /// 완료된 할 일은 회색 배경에 제목 취소선을 긋고, 사분면 태그 대신 [doneLabel] 태그를 보여 준다.
   @override
   Widget build(BuildContext context) {
     final titleStyle = AppTextStyles.itemTitle.copyWith(
