@@ -11,12 +11,15 @@ import '../todo_list/account_todo_screen.dart';
 ///
 /// 탭을 옮겨도 각 탭의 스크롤·입력 상태가 유지되도록 [IndexedStack]으로 모두 붙잡아 둔다.
 class MainScreen extends StatefulWidget {
+  /// 하단 탭 첫 화면을 만든다.
   const MainScreen({super.key});
 
+  /// 선택한 탭 번호를 관리할 상태를 만든다.
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
 
+/// 지금 선택한 탭을 기억하고, 탭을 누르면 해당 화면으로 바꾸는 상태.
 class _MainScreenState extends State<MainScreen> {
   static const _tabs = [
     _Tab(label: '할 일', icon: Icons.checklist, screen: AccountTodoScreen()),
@@ -35,6 +38,7 @@ class _MainScreenState extends State<MainScreen> {
 
   var _selectedIndex = 0;
 
+  /// 탭 화면들을 [IndexedStack]에 겹쳐 두고, 아래에 하단 탭 막대를 그린다.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,7 +71,9 @@ class _MainScreenState extends State<MainScreen> {
   static const _navigationBarHeight = AppSize.fab + AppSpacing.xs;
 }
 
+/// 하단 탭 하나의 이름·아이콘·화면을 묶은 값.
 class _Tab {
+  /// 탭 이름, 아이콘, 보여 줄 화면으로 탭 정보를 만든다.
   const _Tab({required this.label, required this.icon, required this.screen});
 
   final String label;

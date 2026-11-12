@@ -53,6 +53,7 @@ abstract final class AppColors {
 /// 사분면(중요도 × 긴급도) 영역별 색상 묶음. 태그, 사분면 영역, 아바타에 함께 쓴다.
 @immutable
 class QuadrantColors {
+  /// 사분면 영역 하나에 쓸 글자·태그·영역 배경·테두리 색으로 색 묶음을 만든다.
   const QuadrantColors({
     required this.foreground,
     required this.tagBackground,
@@ -98,6 +99,7 @@ class QuadrantColors {
     areaBorder: Color(0xFFE2E2E0),
   );
 
+  /// 중요도·긴급도 조합에 맞는 사분면 색 묶음을 돌려준다.
   static QuadrantColors of({
     required bool isImportant,
     required bool isUrgent,

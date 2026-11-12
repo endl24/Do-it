@@ -6,6 +6,7 @@ enum RepeatCategory {
   importantNotUrgent(isImportant: true, isUrgent: false, timesPerDay: 1),
   notImportantUrgent(isImportant: false, isUrgent: true, timesPerDay: 1);
 
+  /// 분류별 중요도·긴급도와 하루 반복 횟수를 정한다.
   const RepeatCategory({
     required this.isImportant,
     required this.isUrgent,
@@ -21,6 +22,7 @@ enum RepeatCategory {
 // TODO(강두이): 공통 모델(A7)이 확정되면 models/로 옮기고 단말에 저장한다.
 @immutable
 class NotificationSettings {
+  /// 설정 값을 만든다. 주지 않은 값은 알림 켬, 오전 9시, 반복 알림 세 분류 모두 켬으로 정한다.
   const NotificationSettings({
     this.isEnabled = true,
     this.sendTime = const TimeOfDay(hour: 9, minute: 0),
@@ -35,6 +37,7 @@ class NotificationSettings {
   static const earliestSendTime = TimeOfDay(hour: 8, minute: 0);
   static const latestSendTime = TimeOfDay(hour: 22, minute: 0);
 
+  /// [time]이 알림을 보낼 수 있는 시간대(08:00~22:00) 안이면 `true`를 돌려준다(C12).
   static bool isAllowedSendTime(TimeOfDay time) =>
       time.compareTo(earliestSendTime) >= 0 &&
       time.compareTo(latestSendTime) <= 0;
@@ -47,6 +50,7 @@ class NotificationSettings {
   /// 반복 알림을 켠 분류.
   final Set<RepeatCategory> repeatCategories;
 
+  /// 주어진 값만 바꾼 새 설정을 돌려준다. 원본은 바꾸지 않는다.
   NotificationSettings copyWith({
     bool? isEnabled,
     TimeOfDay? sendTime,

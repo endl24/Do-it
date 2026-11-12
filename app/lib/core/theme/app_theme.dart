@@ -4,9 +4,13 @@ import 'app_colors.dart';
 import 'app_spacing.dart';
 import 'app_typography.dart';
 
+/// 앱 전체에 입히는 Material 테마. 색·글자·여백 토큰을 각 컴포넌트 테마에 연결한다.
 class AppTheme {
   static final light = _buildLight();
 
+  /// 밝은 테마를 만든다.
+  ///
+  /// 설계서 색을 [ColorScheme]에 대응시키고, 카드·버튼·입력칸·칩·체크박스·하단 탭·대화상자·스낵바·바텀시트의 기본 모양을 토큰 값으로 정한다.
   static ThemeData _buildLight() {
     const colorScheme = ColorScheme(
       brightness: Brightness.light,
@@ -47,6 +51,7 @@ class AppTheme {
     );
     const buttonSize = Size.fromHeight(AppSize.buttonHeight);
 
+    /// 입력칸 상태별로 [color] 테두리를 쓰는 둥근 외곽선을 만든다.
     OutlineInputBorder inputBorder(Color color) => OutlineInputBorder(
       borderRadius: const BorderRadius.all(Radius.circular(AppRadius.md)),
       borderSide: BorderSide(color: color),

@@ -15,6 +15,7 @@ import 'notification_settings.dart';
 ///
 /// 14 설정 화면에서 push해서 쓴다. 바꾼 값은 저장 버튼 없이 바로 [onChanged]로 넘긴다.
 class NotificationSettingsScreen extends StatefulWidget {
+  /// 처음 보여 줄 설정 [initialSettings]와 바뀐 값을 받을 [onChanged]로 화면을 만든다.
   const NotificationSettingsScreen({
     super.key,
     required this.initialSettings,
@@ -35,20 +36,24 @@ class NotificationSettingsScreen extends StatefulWidget {
   /// [설정 열기]를 눌렀을 때 OS 앱 설정 화면으로 보낸다(A32).
   final VoidCallback? onOpenSystemSettings;
 
+  /// 화면에서 바꾸는 설정 값을 관리할 상태를 만든다.
   @override
   State<NotificationSettingsScreen> createState() =>
       _NotificationSettingsScreenState();
 }
 
+/// 바뀐 설정 값을 들고 있다가 바뀔 때마다 화면을 다시 그리고 [NotificationSettingsScreen.onChanged]로 알리는 상태.
 class _NotificationSettingsScreenState
     extends State<NotificationSettingsScreen> {
   late var _settings = widget.initialSettings;
 
+  /// 설정 값을 [settings]로 바꿔 화면에 반영하고, 부르는 쪽에 바로 알린다.
   void _update(NotificationSettings settings) {
     setState(() => _settings = settings);
     widget.onChanged(settings);
   }
 
+  /// [category] 분류의 반복 알림을 [isOn]에 따라 켜거나 끈다.
   void _toggleRepeat(RepeatCategory category, bool isOn) {
     _update(
       _settings.copyWith(
@@ -59,6 +64,7 @@ class _NotificationSettingsScreenState
     );
   }
 
+  /// 발송 시각 바텀시트를 띄우고, 고른 시각이 지금과 다르면 설정에 반영한다.
   Future<void> _pickSendTime() async {
     final time = await showModalBottomSheet<TimeOfDay>(
       context: context,
@@ -69,6 +75,9 @@ class _NotificationSettingsScreenState
     }
   }
 
+  /// 권한 안내, 알림 받기, 마감 알림 발송 시각, 반복 알림, 묶음 알림 미리보기를 차례로 그린다.
+  ///
+  /// 알림 받기를 끄면 발송 시각과 반복 알림은 누를 수 없게 막는다.
   @override
   Widget build(BuildContext context) {
     final isEnabled = _settings.isEnabled;
@@ -147,11 +156,14 @@ class _NotificationSettingsScreenState
   }
 }
 
+/// 알림 권한이 꺼져 있을 때 화면 맨 위에 띄우는 안내와 [설정 열기] 버튼(E6, A32).
 class _PermissionBanner extends StatelessWidget {
+  /// [설정 열기]를 눌렀을 때 실행할 동작으로 안내를 만든다.
   const _PermissionBanner({required this.onOpenSystemSettings});
 
   final VoidCallback? onOpenSystemSettings;
 
+  /// 오류 안내 박스 아래에 [설정 열기] 버튼을 붙여 그린다.
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -171,7 +183,9 @@ class _PermissionBanner extends StatelessWidget {
   }
 }
 
+/// 반복 알림 분류 하나를 켜고 끄는 행. 사분면 태그, 하루 횟수, 체크박스를 한 줄에 둔다.
 class _RepeatRow extends StatelessWidget {
+  /// [category] 분류와 지금 켜짐 여부 [value]로 행을 만든다. [onChanged]가 `null`이면 누를 수 없다.
   const _RepeatRow({
     required this.category,
     required this.value,
@@ -182,6 +196,7 @@ class _RepeatRow extends StatelessWidget {
   final bool value;
   final ValueChanged<bool>? onChanged;
 
+  /// 행 어디를 눌러도 켜짐 여부가 바뀌게 하고, 누를 수 없을 때는 태그와 글자를 흐리게 그린다.
   @override
   Widget build(BuildContext context) {
     final isEnabled = onChanged != null;
@@ -230,10 +245,12 @@ class _RepeatRow extends StatelessWidget {
 
 /// 묶음 알림(A31)이 어떻게 보이는지 보여주는 예시.
 class _BundledPreview extends StatelessWidget {
+  /// 고정된 예시 내용으로 미리보기를 만든다.
   const _BundledPreview();
 
   static const _iconBoxSize = 44.0;
 
+  /// 앱 아이콘 자리와 묶음 알림 제목·내용 예시를 카드에 그린다.
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -285,14 +302,17 @@ class _BundledPreview extends StatelessWidget {
 ///
 /// 앱에 한국어 지역화가 없어 `showTimePicker`는 영어로 나오므로 직접 만든다.
 class _SendTimeSheet extends StatefulWidget {
+  /// 처음 선택해 둘 시각 [initialTime]으로 바텀시트를 만든다.
   const _SendTimeSheet({required this.initialTime});
 
   final TimeOfDay initialTime;
 
+  /// 오전·오후, 시, 분 선택 값을 관리할 상태를 만든다.
   @override
   State<_SendTimeSheet> createState() => _SendTimeSheetState();
 }
 
+/// 오전·오후, 시(1~12), 분(10분 단위) 휠의 선택 위치를 들고 있다가 시각으로 바꿔 주는 상태.
 class _SendTimeSheetState extends State<_SendTimeSheet> {
   static const _minuteStep = 10;
   static const _pickerHeight = 180.0;
@@ -312,6 +332,7 @@ class _SendTimeSheetState extends State<_SendTimeSheet> {
     initialItem: _minuteIndex,
   );
 
+  /// 바텀시트를 닫을 때 세 휠의 스크롤 컨트롤러를 정리한다.
   @override
   void dispose() {
     _periodController.dispose();
@@ -320,11 +341,13 @@ class _SendTimeSheetState extends State<_SendTimeSheet> {
     super.dispose();
   }
 
+  /// 세 휠에서 고른 값을 24시간제 시각으로 바꿔 돌려준다. 예) 오후 12시 → 12:00, 오전 12시 → 00:00
   TimeOfDay get _time {
     final hour = (_hourIndex + 1) % 12 + (_isPm ? 12 : 0);
     return TimeOfDay(hour: hour, minute: _minuteIndex * _minuteStep);
   }
 
+  /// 세 휠과 [확인] 버튼을 그린다. 고른 시각이 허용 시간대 밖이면 안내 문구를 띄우고 [확인]을 막는다.
   @override
   Widget build(BuildContext context) {
     final isAllowed = NotificationSettings.isAllowedSendTime(_time);
@@ -397,6 +420,7 @@ class _SendTimeSheetState extends State<_SendTimeSheet> {
     );
   }
 
+  /// [labels]를 항목으로 하는 iOS식 휠 하나를 만든다. 고를 때마다 [onSelected]에 위치를 넘긴다.
   Widget _wheel({
     required List<String> labels,
     required FixedExtentScrollController controller,
