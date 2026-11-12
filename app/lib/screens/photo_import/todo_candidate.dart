@@ -1,5 +1,6 @@
 /// 사진에서 인식한 한 줄. 후보 검토 화면(07)에서 할 일로 등록할지 고른다.
 class TodoCandidate {
+  /// 인식한 문장 [text]로 후보를 만든다. 제목으로 보이는 줄이면 [isLikelyTitle]을 `true`로 준다.
   const TodoCandidate({required this.text, this.isLikelyTitle = false});
 
   final String text;

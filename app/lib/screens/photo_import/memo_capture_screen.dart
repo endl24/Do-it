@@ -20,6 +20,7 @@ import 'todo_candidate.dart';
 /// 읽은 줄이 있으면 07 후보 검토, 없으면 08 인식 실패를 이 화면 위에 push한다.
 /// 촬영본은 07·08이 화면을 벗어날 때 삭제한다(A19).
 class MemoCaptureScreen extends StatefulWidget {
+  /// 글자 인식기 [scanner]와 직접 입력·등록 동작으로 촬영 화면을 만든다. 보통은 [MemoCaptureScreen.open]으로 연다.
   const MemoCaptureScreen({
     super.key,
     required this.scanner,
@@ -29,8 +30,7 @@ class MemoCaptureScreen extends StatefulWidget {
 
   final MemoScanner scanner;
 
-  /// [직접 입력]을 눌렀을 때 03 할 일 등록으로 넘어간다.
-  // TODO(강두이): 03 할 일 등록 화면이 생기면 여기서 바로 push한다.
+  /// [직접 입력]을 눌렀을 때 부른다. 부르는 쪽(01 할 일 목록)이 사진 흐름을 닫고 03 할 일 등록 시트를 연다.
   final VoidCallback onManualEntry;
 
   /// 07 후보 검토에서 고른 제목들을 할 일로 저장한다.
@@ -71,16 +71,19 @@ class MemoCaptureScreen extends StatefulWidget {
     );
   }
 
+  /// 카메라·인식 진행 상태를 관리할 상태를 만든다.
   @override
   State<MemoCaptureScreen> createState() => _MemoCaptureScreenState();
 }
 
+/// 카메라 준비, 인식 진행, 연속 실패 횟수를 들고 촬영·앨범 선택부터 07·08로 넘기기까지 맡는 상태.
 class _MemoCaptureScreenState extends State<MemoCaptureScreen> {
   static const _multiplePhotosMessage =
       '한 번에 한 장만 인식할 수 있습니다. 사진을 하나만 선택해 주세요.';
   static const _unsupportedMessage =
       '이 기기에서는 사진 인식을 사용할 수 없습니다. 직접 입력으로 할 일을 등록해 주세요.';
 
+  /// 위젯에서 받은 글자 인식기를 짧게 부르기 위한 이름.
   MemoScanner get _scanner => widget.scanner;
 
   bool _isCameraReady = false;
@@ -89,6 +92,7 @@ class _MemoCaptureScreenState extends State<MemoCaptureScreen> {
   /// 연속으로 인식에 실패한 횟수. 08에 넘겨 직접 입력을 권할지 정한다(B10).
   int _failureCount = 0;
 
+  /// 사진 인식을 쓸 수 있는 기기면 카메라를 켜고, 아니면 첫 화면이 그려진 뒤 사용 불가 안내를 띄운다.
   @override
   void initState() {
     super.initState();
@@ -99,12 +103,16 @@ class _MemoCaptureScreenState extends State<MemoCaptureScreen> {
     }
   }
 
+  /// 화면을 떠날 때 카메라를 끈다. 끄는 동안 기다리지 않는다.
   @override
   void dispose() {
     _scanner.stopCamera().ignore();
     super.dispose();
   }
 
+  /// 카메라를 켜고, 준비되면 셔터를 누를 수 있게 한다.
+  ///
+  /// 켜지 못하면 기록만 남기고 셔터를 막아 둔 채 앨범과 직접 입력은 그대로 쓸 수 있게 한다.
   Future<void> _startCamera() async {
     try {
       await _scanner.startCamera();
@@ -114,6 +122,7 @@ class _MemoCaptureScreenState extends State<MemoCaptureScreen> {
     }
   }
 
+  /// 이 기기에서 사진 인식을 쓸 수 없다고 알리고, [직접 입력]을 고르면 직접 입력으로, [닫기]를 고르면 이전 화면으로 보낸다.
   Future<void> _showUnsupported() async {
     final isManualEntry = await showConfirmDialog(
       context,
@@ -130,6 +139,7 @@ class _MemoCaptureScreenState extends State<MemoCaptureScreen> {
     }
   }
 
+  /// 사진을 찍어 글자 인식을 시작한다. 촬영에 실패하면 인식 중 표시를 풀고 다시 시도하라고 안내한다.
   Future<void> _takePicture() async {
     // 촬영이 끝나기 전에 셔터를 또 누르지 못하게 바로 인식 중으로 표시한다.
     setState(() => _isRecognizing = true);
@@ -145,6 +155,9 @@ class _MemoCaptureScreenState extends State<MemoCaptureScreen> {
     await _recognize(image);
   }
 
+  /// 앨범에서 사진을 고르게 하고, 한 장이면 글자 인식을 시작한다.
+  ///
+  /// 여러 장을 골랐으면 받은 사진을 모두 지우고 한 장만 고르라고 안내한다.
   Future<void> _pickFromAlbum() async {
     final images = await _scanner.pickFromAlbum();
     // 선택을 취소하면 아무 일 없이 촬영 화면에 남는다(B6).
@@ -159,6 +172,10 @@ class _MemoCaptureScreenState extends State<MemoCaptureScreen> {
     await _recognize(images.single);
   }
 
+  /// [image]에서 글자를 읽어 할 일 후보로 바꾸고, 후보가 있으면 07 후보 검토, 없으면 08 인식 실패를 띄운다.
+  ///
+  /// 인식 중 오류는 읽은 줄이 없는 것으로 보고 08로 보낸다. 후보가 없을 때마다 연속 실패 횟수를 늘리고,
+  /// 후보가 나오면 0으로 되돌린다. 인식 중에 화면을 벗어났으면 사진을 바로 지운다(A19).
   Future<void> _recognize(File image) async {
     setState(() => _isRecognizing = true);
     List<String> lines;
@@ -193,6 +210,7 @@ class _MemoCaptureScreenState extends State<MemoCaptureScreen> {
     );
   }
 
+  /// 지금 떠 있는 스낵바를 닫고 [message]를 새 스낵바로 띄운다.
   void _showMessage(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -200,6 +218,9 @@ class _MemoCaptureScreenState extends State<MemoCaptureScreen> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
+  /// 어두운 촬영 화면에 미리보기와 아래 버튼 줄(앨범·셔터·직접 입력)을 그린다.
+  ///
+  /// 인식 중에는 모든 버튼을 막고, 셔터는 카메라가 준비됐을 때만 누를 수 있다.
   @override
   Widget build(BuildContext context) {
     final canCapture = _isCameraReady && !_isRecognizing;
@@ -240,11 +261,13 @@ class _MemoCaptureScreenState extends State<MemoCaptureScreen> {
 
 /// 카메라 미리보기, 한 장 안내, 안내선, 인식 중 표시를 겹쳐 그린다.
 class _Viewfinder extends StatelessWidget {
+  /// 카메라 미리보기 [preview](준비 전이면 `null`)와 인식 중 여부로 뷰파인더를 만든다.
   const _Viewfinder({required this.preview, required this.isRecognizing});
 
   final Widget? preview;
   final bool isRecognizing;
 
+  /// 미리보기 위에 안내 문구와 안내선 테두리를 겹치고, 인식 중이면 아래쪽에 인식 중 카드를 띄운다.
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -301,11 +324,14 @@ class _Viewfinder extends StatelessWidget {
   }
 }
 
+/// 어두운 화면 위에 띄우는 반투명 안내 문구 박스.
 class _DarkNotice extends StatelessWidget {
+  /// 보여 줄 [message]로 안내 박스를 만든다.
   const _DarkNotice({required this.message});
 
   final String message;
 
+  /// 정보 아이콘과 흰 글자를 반투명 어두운 배경 위에 그린다.
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -340,8 +366,10 @@ class _DarkNotice extends StatelessWidget {
 
 /// 인식 중 표시. 사진을 외부로 보내지 않는다는 안내를 함께 보여준다(B11 C3).
 class _RecognizingCard extends StatelessWidget {
+  /// 고정된 문구로 인식 중 카드를 만든다.
   const _RecognizingCard();
 
+  /// 진행 표시와 인식 중 문구, 단말 처리 안내를 한 줄에 그린다.
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -386,7 +414,9 @@ class _RecognizingCard extends StatelessWidget {
   }
 }
 
+/// 촬영 화면 아래의 앨범·셔터·직접 입력 버튼 줄. `null`을 받은 버튼은 누를 수 없다.
 class _CaptureControls extends StatelessWidget {
+  /// 세 버튼에서 실행할 동작으로 버튼 줄을 만든다.
   const _CaptureControls({
     required this.onAlbum,
     required this.onShutter,
@@ -397,6 +427,7 @@ class _CaptureControls extends StatelessWidget {
   final VoidCallback? onShutter;
   final VoidCallback? onManualEntry;
 
+  /// 셔터를 가운데에, 앨범과 직접 입력 버튼을 양옆에 둔다.
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -426,7 +457,9 @@ class _CaptureControls extends StatelessWidget {
   }
 }
 
+/// 셔터 양옆에 두는 아이콘·글자 사각 버튼.
 class _SideButton extends StatelessWidget {
+  /// 아이콘, 글자, 누를 때 동작으로 버튼을 만든다. [onPressed]가 `null`이면 누를 수 없다.
   const _SideButton({
     required this.icon,
     required this.label,
@@ -439,6 +472,7 @@ class _SideButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
 
+  /// 누를 수 없을 때는 아이콘과 글자를 흐린 색으로 그린다.
   @override
   Widget build(BuildContext context) {
     final color = onPressed == null
@@ -471,7 +505,9 @@ class _SideButton extends StatelessWidget {
   }
 }
 
+/// 사진을 찍는 원형 셔터 버튼.
 class _ShutterButton extends StatelessWidget {
+  /// 누를 때 동작으로 셔터를 만든다. [onPressed]가 `null`이면 누를 수 없다.
   const _ShutterButton({required this.onPressed});
 
   static const _outerSize = 84.0;
@@ -479,6 +515,7 @@ class _ShutterButton extends StatelessWidget {
 
   final VoidCallback? onPressed;
 
+  /// 바깥 원 안에 흰 원을 겹쳐 그리고, 누를 수 없을 때는 흐리게 한다. 화면 읽기 프로그램에는 '촬영' 버튼으로 알린다.
   @override
   Widget build(BuildContext context) {
     final isEnabled = onPressed != null;

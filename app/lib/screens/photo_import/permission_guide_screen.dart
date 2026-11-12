@@ -13,6 +13,7 @@ import '../../widgets/notice_box.dart';
 /// 권한을 허용하면 [onCameraGranted]로 06에 넘어가고, [나중에 하기]는 01로 돌아간다.
 /// 권한을 거부해도 앱을 종료하지 않고 이 화면에 남는다(B6).
 class PermissionGuideScreen extends StatefulWidget {
+  /// 권한 확인·요청을 맡을 [permissionService]와 허용 후 동작 [onCameraGranted]로 화면을 만든다.
   const PermissionGuideScreen({
     super.key,
     required this.permissionService,
@@ -25,10 +26,12 @@ class PermissionGuideScreen extends StatefulWidget {
   /// `MemoCaptureScreen.open`이 이 화면을 06으로 바꾸도록 넘겨준다.
   final VoidCallback onCameraGranted;
 
+  /// 권한 상태를 관리할 상태를 만든다.
   @override
   State<PermissionGuideScreen> createState() => _PermissionGuideScreenState();
 }
 
+/// 카메라·알림 권한 상태를 읽어 들고 있다가, 요청 결과와 설정 앱에서 돌아온 뒤의 변화를 반영하는 상태.
 class _PermissionGuideScreenState extends State<PermissionGuideScreen> {
   static const _cameraDeniedMessage =
       '사진으로 등록하려면 카메라와 사진 접근이 필요합니다. 권한을 허용하거나 직접 입력으로 등록해 주세요.';
@@ -37,8 +40,10 @@ class _PermissionGuideScreenState extends State<PermissionGuideScreen> {
   AppPermissionStatus? _cameraStatus;
   AppPermissionStatus? _notificationStatus;
 
+  /// 위젯에서 받은 권한 서비스를 짧게 부르기 위한 이름.
   PermissionService get _service => widget.permissionService;
 
+  /// 앱이 다시 앞으로 나올 때마다 권한 상태를 다시 읽도록 등록하고, 처음 상태를 읽는다.
   @override
   void initState() {
     super.initState();
@@ -47,12 +52,14 @@ class _PermissionGuideScreenState extends State<PermissionGuideScreen> {
     _loadStatuses();
   }
 
+  /// 화면을 떠날 때 앱 상태 감시를 멈춘다.
   @override
   void dispose() {
     _lifecycleListener.dispose();
     super.dispose();
   }
 
+  /// 카메라·알림 권한 상태를 읽어 화면에 반영한다.
   Future<void> _loadStatuses() async {
     final camera = await _service.cameraStatus();
     final notification = await _service.notificationStatus();
@@ -63,6 +70,7 @@ class _PermissionGuideScreenState extends State<PermissionGuideScreen> {
     });
   }
 
+  /// 카메라·사진 권한을 요청한다. 허용되면 06으로 넘어가고, 거부되면 직접 입력도 가능하다고 안내한다.
   Future<void> _requestCamera() async {
     final status = await _service.requestCamera();
     if (!mounted) return;
@@ -76,12 +84,14 @@ class _PermissionGuideScreenState extends State<PermissionGuideScreen> {
     }
   }
 
+  /// 알림 권한을 요청하고 결과를 화면에 반영한다.
   Future<void> _requestNotification() async {
     final status = await _service.requestNotification();
     if (!mounted) return;
     setState(() => _notificationStatus = status);
   }
 
+  /// 권한 상태를 읽는 동안은 진행 표시를, 다 읽으면 카메라·알림 권한 카드와 안내를 그린다. 아래에는 [나중에 하기]를 둔다.
   @override
   Widget build(BuildContext context) {
     final cameraStatus = _cameraStatus;
@@ -136,7 +146,9 @@ class _PermissionGuideScreenState extends State<PermissionGuideScreen> {
   }
 }
 
+/// 카메라·사진 권한 상태와 그에 맞는 버튼을 보여 주는 카드.
 class _CameraCard extends StatelessWidget {
+  /// 권한 상태와 요청·설정 열기·계속하기 동작으로 카드를 만든다.
   const _CameraCard({
     required this.status,
     required this.onRequest,
@@ -149,6 +161,10 @@ class _CameraCard extends StatelessWidget {
   final VoidCallback onOpenSettings;
   final VoidCallback onContinue;
 
+  /// 권한 상태에 따라 상태 줄과 버튼을 고른다.
+  ///
+  /// 허용됨이면 [메모 촬영하기], 다시 묻지 않음으로 거부됐으면 [설정에서 권한 켜기]와 설정 경로, 그 밖에는 [권한 허용하기]를 보여 준다.
+  /// 아직 묻지 않았으면 상태 줄 대신 사진 미전송 안내를 보여 준다.
   @override
   Widget build(BuildContext context) {
     return _PermissionCard(
@@ -185,7 +201,9 @@ class _CameraCard extends StatelessWidget {
   }
 }
 
+/// 알림 권한 상태와 그에 맞는 버튼을 보여 주는 카드.
 class _NotificationCard extends StatelessWidget {
+  /// 권한 상태와 요청·설정 열기 동작으로 카드를 만든다.
   const _NotificationCard({
     required this.status,
     required this.onRequest,
@@ -196,6 +214,9 @@ class _NotificationCard extends StatelessWidget {
   final VoidCallback onRequest;
   final VoidCallback onOpenSettings;
 
+  /// 아직 묻지 않았으면 [알림 허용하기]를, 허용됐으면 상태 줄을 보여 준다.
+  ///
+  /// 거부됐으면 상태 줄 아래에 [설정에서 알림 켜기]와 설정 경로를 덧붙인다.
   @override
   Widget build(BuildContext context) {
     final isDenied =
@@ -234,6 +255,7 @@ class _NotificationCard extends StatelessWidget {
 
 /// 아이콘·제목·설명 아래에 상태와 버튼을 담는 카드.
 class _PermissionCard extends StatelessWidget {
+  /// 아이콘·색·제목·설명과 아래에 붙일 [children]으로 카드를 만든다.
   const _PermissionCard({
     required this.icon,
     required this.iconColor,
@@ -252,6 +274,7 @@ class _PermissionCard extends StatelessWidget {
   final String description;
   final List<Widget> children;
 
+  /// 왼쪽 위에 색 배경 아이콘, 옆에 제목·설명을 두고 그 아래에 [children]을 쌓는다.
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -305,8 +328,10 @@ class _PermissionCard extends StatelessWidget {
 
 /// 사진을 외부로 보내지 않는다는 안내(B11).
 class _PrivacyNote extends StatelessWidget {
+  /// 고정된 문구로 안내를 만든다.
   const _PrivacyNote();
 
+  /// 옅은 배경 상자에 안내 문구를 그린다.
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -328,13 +353,16 @@ class _PrivacyNote extends StatelessWidget {
 
 /// 점과 짧은 문구로 권한 상태를 보여주는 줄. 예) `● 현재 거부됨 — 알림이 오지 않습니다`
 class _StatusLine extends StatelessWidget {
+  /// 허용됨을 나타내는 초록 상태 줄을 만든다.
   const _StatusLine.granted(this.text) : isDenied = false;
 
+  /// 거부됨을 나타내는 빨간 상태 줄을 만든다.
   const _StatusLine.denied(this.text) : isDenied = true;
 
   final String text;
   final bool isDenied;
 
+  /// 허용·거부에 맞는 색의 점과 문구를 상자에 그린다.
   @override
   Widget build(BuildContext context) {
     final color = isDenied
@@ -375,11 +403,14 @@ class _StatusLine extends StatelessWidget {
   }
 }
 
+/// 권한을 켜는 설정 앱 경로를 알려 주는 작은 안내 글자.
 class _SettingsPath extends StatelessWidget {
+  /// 보여 줄 경로 안내 [text]로 글자를 만든다.
   const _SettingsPath(this.text);
 
   final String text;
 
+  /// 위에 여백을 두고 캡션 크기의 보조 글자로 그린다.
   @override
   Widget build(BuildContext context) {
     return Padding(
