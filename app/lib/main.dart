@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'app.dart';
 import 'services/firebase_bootstrap.dart';
 
-// Firebase 설정을 확인하고 초기화한 뒤 앱을 실행한다.
+/// Firebase 설정을 확인하고 초기화한 뒤 앱을 실행한다.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final isFirebaseReady = await initializeFirebaseIfConfigured();
