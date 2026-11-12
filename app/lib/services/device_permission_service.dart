@@ -9,24 +9,29 @@ import 'permission_service.dart';
 class DevicePermissionService implements PermissionService {
   const DevicePermissionService();
 
+  /// 묻지 않고 지금의 카메라 권한 상태를 확인한다.
   @override
   Future<AppPermissionStatus> cameraStatus() async =>
       fromStatus(await handler.Permission.camera.status);
 
+  /// OS 권한 창을 띄워 카메라 권한을 요청하고 결과를 돌려준다.
   @override
   Future<AppPermissionStatus> requestCamera() async =>
       fromStatus(await handler.Permission.camera.request(), isRequest: true);
 
+  /// 묻지 않고 지금의 알림 권한 상태를 확인한다.
   @override
   Future<AppPermissionStatus> notificationStatus() async =>
       fromStatus(await handler.Permission.notification.status);
 
+  /// OS 권한 창을 띄워 알림 권한을 요청하고 결과를 돌려준다.
   @override
   Future<AppPermissionStatus> requestNotification() async => fromStatus(
     await handler.Permission.notification.request(),
     isRequest: true,
   );
 
+  /// 기기 설정의 이 앱 화면을 연다. 다시 묻지 않는 거부 상태일 때 쓴다.
   @override
   Future<void> openAppSettings() => handler.openAppSettings();
 

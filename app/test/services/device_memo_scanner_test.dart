@@ -5,6 +5,7 @@ import 'package:do_it/services/text_recognizer.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
 
+/// 네이티브 인식 대신 정해 둔 줄이나 오류를 돌려주고, 받은 사진을 기록하는 인식기.
 class _FakeRecognizer implements TextRecognizer {
   _FakeRecognizer({this.lines = const [], this.error});
 
@@ -15,9 +16,11 @@ class _FakeRecognizer implements TextRecognizer {
   @override
   bool isSupported = true;
 
+  /// 미리 읽을 모델이 없어 바로 끝낸다.
   @override
   Future<void> warmUp() async {}
 
+  /// 받은 사진을 [lastImage]에 남기고, [error]가 있으면 던지고 없으면 [lines]를 돌려준다.
   @override
   Future<List<String>> recognizeLines(File image) async {
     lastImage = image;
@@ -26,6 +29,7 @@ class _FakeRecognizer implements TextRecognizer {
   }
 }
 
+/// [DeviceMemoScanner]가 사진을 임시 폴더로 옮기고 지우는지, 인식 결과를 그대로 넘기는지 검사한다.
 void main() {
   late Directory root;
   late Directory pluginTemp;
@@ -39,6 +43,7 @@ void main() {
 
   tearDown(() => root.delete(recursive: true));
 
+  /// 테스트용 임시 폴더와 가짜 인식기·선택기를 연결한 스캐너를 만든다.
   DeviceMemoScanner scanner({
     TextRecognizer? recognizer,
     List<XFile> picked = const [],
@@ -50,6 +55,7 @@ void main() {
     );
   }
 
+  /// 플러그인이 만든 것처럼 원래 위치에 작은 사진 파일을 만든다.
   Future<File> pluginFile(String name) =>
       File('${pluginTemp.path}/$name').writeAsBytes([1, 2, 3]);
 

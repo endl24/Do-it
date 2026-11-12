@@ -31,11 +31,13 @@ class DeviceMemoScanner implements MemoScanner {
   /// 마지막 인식에 걸린 시간. README 처리 시간 측정값(#84)에 쓴다.
   Duration? lastRecognitionDuration;
 
+  /// 앱 임시 폴더 안의 `memo_capture/` 위치를 돌려준다. 폴더는 쓸 때 만든다.
   static Future<Directory> _defaultCaptureDirectory() async {
     final temp = await getTemporaryDirectory();
     return Directory('${temp.path}/memo_capture');
   }
 
+  /// 시스템 사진 선택기를 열어 사용자가 고른 사진을 받는다.
   static Future<List<XFile>> _pickFromSystemPicker() {
     // 시스템 사진 선택기는 고른 사진만 앱에 넘기므로 사진 접근 권한이 필요 없다.
     // 크기·화질 옵션을 주면 Android에서 원본 사본과 줄인 사본 두 개가 캐시에 생기고
@@ -43,9 +45,14 @@ class DeviceMemoScanner implements MemoScanner {
     return ImagePicker().pickMultiImage();
   }
 
+  /// 이 기기에서 글자 인식을 쓸 수 있는지 인식기에 묻는다.
   @override
   bool get isRecognitionSupported => _recognizer.isSupported;
 
+  /// 뒤쪽 카메라를 켠다.
+  ///
+  /// 켜기 전에 인식 모델을 미리 읽기 시작하고, 지난 흐름에서 남은 촬영본을 지운다.
+  /// 카메라가 없으면 [CameraException]을 던진다.
   @override
   Future<void> startCamera() async {
     // 첫 인식 때 모델을 읽느라 오래 걸리므로(B2) 카메라를 켜는 동안 미리 읽어 둔다.
@@ -70,6 +77,7 @@ class DeviceMemoScanner implements MemoScanner {
     await camera.initialize();
   }
 
+  /// 카메라를 끄고 자원을 놓는다. 켜져 있지 않으면 아무 일도 하지 않는다.
   @override
   Future<void> stopCamera() async {
     final camera = _camera;
@@ -77,6 +85,7 @@ class DeviceMemoScanner implements MemoScanner {
     await camera?.dispose();
   }
 
+  /// 카메라 미리보기를 뷰파인더 크기에 맞춰 그린다. 준비 전이면 빈 칸을 돌려준다.
   @override
   Widget buildCameraPreview() {
     final camera = _camera;
@@ -96,6 +105,7 @@ class DeviceMemoScanner implements MemoScanner {
     );
   }
 
+  /// 사진을 찍어 앱 임시 폴더로 옮긴 파일을 돌려준다.
   @override
   Future<File> takePicture() async {
     final camera = _camera;
@@ -106,6 +116,7 @@ class DeviceMemoScanner implements MemoScanner {
     return moveToCaptureDirectory(File(picture.path));
   }
 
+  /// 앨범에서 고른 사진을 앱 임시 폴더로 옮겨 돌려준다. 취소하면 빈 목록이다.
   @override
   Future<List<File>> pickFromAlbum() async {
     final picked = await _pickImages();
@@ -115,6 +126,7 @@ class DeviceMemoScanner implements MemoScanner {
     ];
   }
 
+  /// [image]의 글자를 줄 단위로 읽고, 걸린 시간을 기록해 로그로 남긴다(#84 측정).
   @override
   Future<List<String>> recognizeLines(File image) async {
     final stopwatch = Stopwatch()..start();

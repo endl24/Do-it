@@ -25,6 +25,7 @@ class TextRecognitionHandler(private val context: Context) : MethodChannel.Metho
         TextRecognition.getClient(KoreanTextRecognizerOptions.Builder().build())
     }
 
+    /** Dart에서 온 호출을 이름에 따라 미리 읽기나 줄 인식으로 나눈다. */
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
             "warmUp" -> warmUp(result)
@@ -43,6 +44,11 @@ class TextRecognitionHandler(private val context: Context) : MethodChannel.Metho
             }
     }
 
+    /**
+     * `path`의 사진을 읽어 줄 목록을 돌려준다.
+     *
+     * 사진을 열지 못하거나 인식이 실패하면 오류 코드를 Dart에 돌려준다.
+     */
     private fun recognizeLines(call: MethodCall, result: MethodChannel.Result) {
         val path = call.argument<String>("path")
         if (path == null) {
@@ -87,6 +93,7 @@ class TextRecognitionHandler(private val context: Context) : MethodChannel.Metho
         }
     }
 
+    /** 인식기를 닫는다. 엔진이 정리될 때 [MainActivity]가 부른다. */
     fun close() {
         recognizer.close()
     }

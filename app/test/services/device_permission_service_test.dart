@@ -3,9 +3,13 @@ import 'package:do_it/services/permission_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+/// `permission_handler` 상태가 화면에서 쓰는 권한 상태로 맞게 바뀌는지 검사한다.
 void main() {
+  /// 상태 확인 결과로 바꾼다.
   AppPermissionStatus fromCheck(PermissionStatus status) =>
       DevicePermissionService.fromStatus(status);
+
+  /// 권한 요청 결과로 바꾼다.
   AppPermissionStatus fromRequest(PermissionStatus status) =>
       DevicePermissionService.fromStatus(status, isRequest: true);
 

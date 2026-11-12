@@ -27,6 +27,7 @@ class PlatformTextRecognizer implements TextRecognizer {
   /// Vision의 한국어 인식은 iOS 16부터 지원한다.
   static const _minimumIosVersion = 16;
 
+  /// Android는 64비트 기기, iOS는 16 이상이면 인식을 쓸 수 있다고 본다.
   @override
   bool get isSupported {
     if (Platform.isAndroid) {
@@ -41,12 +42,14 @@ class PlatformTextRecognizer implements TextRecognizer {
     return false;
   }
 
+  /// 네이티브 인식기에 모델을 미리 읽게 한다. 지원하지 않는 기기에서는 건너뛴다.
   @override
   Future<void> warmUp() async {
     if (!isSupported) return;
     await _channel.invokeMethod<void>('warmUp');
   }
 
+  /// 사진 경로를 네이티브 인식기에 넘겨 읽은 줄을 받는다. 결과가 없으면 빈 목록이다.
   @override
   Future<List<String>> recognizeLines(File image) async {
     final lines = await _channel.invokeListMethod<String>('recognizeLines', {
