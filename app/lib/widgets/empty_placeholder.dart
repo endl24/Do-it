@@ -6,6 +6,7 @@ import '../core/theme/app_typography.dart';
 
 /// 점선 테두리 안에 비어 있음을 알리는 박스. 예) 필터 결과 없음, 날짜별 마감 없음
 class EmptyPlaceholder extends StatelessWidget {
+  /// [message]와 선택 설명·아이콘으로 빈 상태 박스를 만든다.
   const EmptyPlaceholder({
     super.key,
     required this.message,
@@ -30,6 +31,7 @@ class EmptyPlaceholder extends StatelessWidget {
   /// 박스 전체를 누를 수 있게 한다.
   final VoidCallback? onTap;
 
+  /// [onTap]이 있으면 박스 전체를 버튼처럼 누를 수 있게 감싼다.
   @override
   Widget build(BuildContext context) {
     final box = _buildBox();
@@ -44,6 +46,9 @@ class EmptyPlaceholder extends StatelessWidget {
     );
   }
 
+  /// 점선 박스 안에 아이콘·안내 문구·설명을 그린다.
+  ///
+  /// 아이콘이 있으면 가운데 정렬로 크게, 없으면 왼쪽 정렬로 작게 보여 준다.
   Widget _buildBox() {
     final hasIcon = icon != null;
 
@@ -87,6 +92,7 @@ class EmptyPlaceholder extends StatelessWidget {
 
 /// 점선 테두리 박스. 제외된 인식 후보, 빈 목록 자리 등에 쓴다.
 class DashedBorderBox extends StatelessWidget {
+  /// 기본 여백·배경색·테두리 색·모서리 반경으로 점선 박스를 만든다.
   const DashedBorderBox({
     super.key,
     required this.child,
@@ -102,6 +108,7 @@ class DashedBorderBox extends StatelessWidget {
   final Color borderColor;
   final double radius;
 
+  /// 배경 상자 위에 점선 테두리를 덧그린다.
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
@@ -122,7 +129,9 @@ class DashedBorderBox extends StatelessWidget {
   }
 }
 
+/// 둥근 사각형 테두리를 점선으로 그리는 페인터.
 class _DashedBorderPainter extends CustomPainter {
+  /// 테두리 색과 모서리 반경을 받아 페인터를 만든다.
   const _DashedBorderPainter({required this.color, required this.radius});
 
   final Color color;
@@ -131,6 +140,9 @@ class _DashedBorderPainter extends CustomPainter {
   static const _dashLength = 4.0;
   static const _gapLength = 3.0;
 
+  /// 둥근 사각형 둘레를 따라가며 [_dashLength]만큼 그리고 [_gapLength]만큼 띄우기를 반복한다.
+  ///
+  /// 선 두께의 절반만큼 안쪽으로 들여 그려서 테두리가 잘리지 않게 한다.
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
@@ -161,6 +173,7 @@ class _DashedBorderPainter extends CustomPainter {
     canvas.drawPath(dashed, paint);
   }
 
+  /// 색이나 모서리 반경이 바뀌었을 때만 다시 그린다.
   @override
   bool shouldRepaint(_DashedBorderPainter oldDelegate) =>
       color != oldDelegate.color || radius != oldDelegate.radius;

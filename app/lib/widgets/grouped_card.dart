@@ -6,6 +6,7 @@ import '../core/theme/app_typography.dart';
 
 /// 여러 행을 구분선으로 나눠 한 카드에 담는다. 할 일 상세 정보, 설정 목록 등에 쓴다.
 class GroupedCard extends StatelessWidget {
+  /// [children] 행들과 선택 [footer]로 묶음 카드를 만든다.
   const GroupedCard({super.key, required this.children, this.footer});
 
   final List<Widget> children;
@@ -13,6 +14,7 @@ class GroupedCard extends StatelessWidget {
   /// 카드 맨 아래 옅은 배경으로 붙는 설명. 예) `알림은 08:00 ~ 22:00 사이에만 발송됩니다`
   final String? footer;
 
+  /// 행 사이에 구분선을 넣고, [footer]가 있으면 맨 아래에 옅은 배경으로 붙인다.
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -45,6 +47,7 @@ class GroupedCard extends StatelessWidget {
 
 /// 왼쪽에 라벨, 오른쪽에 값을 두는 행. [onTap]이 있으면 오른쪽 화살표가 붙는다.
 class LabelValueRow extends StatelessWidget {
+  /// 라벨과 값(글자 [value] 또는 위젯 [valueWidget] 중 하나)으로 행을 만든다.
   const LabelValueRow({
     super.key,
     required this.label,
@@ -64,6 +67,9 @@ class LabelValueRow extends StatelessWidget {
   final String? description;
   final VoidCallback? onTap;
 
+  /// 라벨·설명을 왼쪽에, 값과 화살표를 오른쪽에 그린다.
+  ///
+  /// 누를 수 있는 행은 값을 옅게, 누를 수 없는 행은 값을 굵게 보여 준다.
   @override
   Widget build(BuildContext context) {
     return InkWell(

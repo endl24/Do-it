@@ -8,6 +8,7 @@ import 'notice_box.dart';
 /// 같은 요청이 여러 번 연속으로 실패하면([isSlowedDown]) 문구를
 /// "잠시 후 다시 시도해 주세요"로 바꾼다. 실패 횟수는 `RetryBackoff`로 센다.
 class ErrorRetryCard extends StatelessWidget {
+  /// 원인 문구와 [다시 시도] 동작으로 오류 카드를 만든다.
   const ErrorRetryCard({
     super.key,
     required this.message,
@@ -33,6 +34,7 @@ class ErrorRetryCard extends StatelessWidget {
   final VoidCallback? onRetry;
   final bool isSlowedDown;
 
+  /// 오류 안내 박스와 [다시 시도] 버튼을 세로로 놓는다. 안내 박스는 화면 읽기 프로그램이 바로 읽도록 알린다.
   @override
   Widget build(BuildContext context) {
     return Column(
