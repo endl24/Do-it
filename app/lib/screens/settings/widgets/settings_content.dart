@@ -10,7 +10,9 @@ import '../../../widgets/initial_avatar.dart';
 import '../../../widgets/section_header.dart';
 import '../../notification_settings/notification_settings.dart';
 
+/// 14 설정 화면의 본문. 프로필·닉네임 카드, 알림·권한·동기화 줄, 계정 연동·로그아웃 줄과 회원 탈퇴 버튼을 보여 준다.
 class SettingsContent extends StatelessWidget {
+  /// 닉네임 입력 상태, 계정 연동·동기화 대기·알림·권한 표시 값과 각 줄을 눌렀을 때 동작으로 본문을 만든다.
   const SettingsContent({
     super.key,
     required this.name,
@@ -44,6 +46,8 @@ class SettingsContent extends StatelessWidget {
   final VoidCallback? onLink;
   final VoidCallback? onLogout;
   final VoidCallback? onDelete;
+
+  /// 프로필 카드 아래에 상태 줄 묶음, 계정 줄 묶음, 회원 탈퇴 버튼과 안내 문구를 차례로 그린다. 연동돼 있으면 계정 줄에 이메일을 보여 준다.
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -104,7 +108,9 @@ class SettingsContent extends StatelessWidget {
   );
 }
 
+/// 아바타·닉네임·연동 상태와 닉네임 입력칸을 보여 주는 프로필 카드.
 class _ProfileCard extends StatelessWidget {
+  /// 저장한 닉네임, 입력 컨트롤러·포커스, 요청 중·연동 여부와 입력 동작으로 카드를 만든다.
   const _ProfileCard({
     required this.name,
     required this.controller,
@@ -119,6 +125,8 @@ class _ProfileCard extends StatelessWidget {
   final bool isBusy;
   final bool isLinked;
   final ValueChanged<String> onNameChanged;
+
+  /// 저장한 닉네임으로 아바타와 이름을 보여 주고, 아래에 12자까지 받는 닉네임 입력칸과 글자 수를 그린다. 완료하거나 입력칸 밖을 누르면 포커스를 빼서 저장되게 한다.
   @override
   Widget build(BuildContext context) => Card(
     child: Padding(

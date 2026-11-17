@@ -17,8 +17,11 @@ import '../../widgets/error_retry_card.dart';
 import '../../widgets/skeleton_list.dart';
 import 'todo_list_screen.dart';
 
-// 계정에 맞는 저장소를 준비한 후 기존 할 일 화면에 주입한다.
+/// 계정에 맞는 저장소를 준비한 후 기존 할 일 화면에 주입한다.
 class AccountTodoScreen extends StatefulWidget {
+  /// 계정 서비스 [accountService], 저장소 세션 [session], 연결 상태 변화 [onlineChanges]로 화면을 만든다.
+  ///
+  /// 계정 서비스와 세션은 둘 다 넘기거나 둘 다 비워야 한다. 비우면 Firebase가 준비된 경우에만 실제 서비스를 만든다.
   const AccountTodoScreen({
     super.key,
     this.accountService,
@@ -30,11 +33,12 @@ class AccountTodoScreen extends StatefulWidget {
   final TodoRepositorySession? session;
   final Stream<bool>? onlineChanges;
 
+  /// 계정별 저장소 준비와 연결 상태를 관리할 상태를 만든다.
   @override
   State<AccountTodoScreen> createState() => _AccountTodoScreenState();
 }
 
-// 인증 변경마다 화면을 분리해 이전 계정의 목록이 새 계정에 남지 않도록 한다.
+/// 인증 변경마다 화면을 분리해 이전 계정의 목록이 새 계정에 남지 않도록 한다.
 class _AccountTodoScreenState extends State<AccountTodoScreen>
     with WidgetsBindingObserver {
   AccountService? _accountService;
@@ -45,7 +49,7 @@ class _AccountTodoScreenState extends State<AccountTodoScreen>
   StreamSubscription<bool>? _onlineSubscription;
   bool _isOnline = true;
 
-  // Firebase 없는 실행은 기존 SQLite 화면을 유지하고 인증이 있으면 저장소를 준비한다.
+  /// Firebase 없는 실행은 기존 SQLite 화면을 유지하고 인증이 있으면 저장소를 준비한다.
   @override
   void initState() {
     super.initState();
@@ -79,7 +83,7 @@ class _AccountTodoScreenState extends State<AccountTodoScreen>
     });
   }
 
-  // 인터넷 확인 결과를 목록에 전달해 배너와 복구 시 새로고침을 연결한다.
+  /// 인터넷 확인 결과를 목록에 전달해 배너와 복구 시 새로고침을 연결한다.
   void _watchOnline() {
     _onlineSubscription = (widget.onlineChanges ?? InternetStatus().watch())
         .listen((isOnline) {
@@ -88,7 +92,7 @@ class _AccountTodoScreenState extends State<AccountTodoScreen>
         });
   }
 
-  // 백그라운드에서는 주기 검사를 멈추고 앱 복귀 시 즉시 다시 확인한다.
+  /// 백그라운드에서는 주기 검사를 멈추고 앱 복귀 시 즉시 다시 확인한다.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (_accountService == null || widget.onlineChanges != null) return;
@@ -102,7 +106,7 @@ class _AccountTodoScreenState extends State<AccountTodoScreen>
     }
   }
 
-  // 화면이 닫히면 인증 상태 구독을 해제한다.
+  /// 화면이 닫히면 앱 상태 감시를 멈추고 인증 상태·인터넷 연결 구독을 해제한다.
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -111,7 +115,7 @@ class _AccountTodoScreenState extends State<AccountTodoScreen>
     super.dispose();
   }
 
-  // 실패한 저장소 준비나 이관을 같은 계정과 같은 ID로 다시 시도한다.
+  /// 실패한 저장소 준비나 이관을 같은 계정과 같은 ID로 다시 시도한다.
   void _retry() {
     final repository = _session!.forAccount(_uid);
     setState(() {
@@ -119,7 +123,7 @@ class _AccountTodoScreenState extends State<AccountTodoScreen>
     });
   }
 
-  // 이관 중에는 이전 계정 데이터를 숨기고 진행 상태 또는 재시도를 표시한다.
+  /// 이관 중에는 이전 계정 데이터를 숨기고 진행 상태 또는 재시도를 표시한다.
   @override
   Widget build(BuildContext context) {
     if (_session == null) return const TodoListScreen();
