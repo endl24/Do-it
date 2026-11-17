@@ -7,7 +7,9 @@ import '../../../widgets/empty_placeholder.dart';
 import '../../../widgets/initial_avatar.dart';
 import '../team_view_data.dart';
 
+/// 12 팀 화면 위쪽의 팀 요약 카드. 팀 이름, 구성원·공유 할 일 수, 구성원 아바타와 초대 코드를 보여 준다.
 class TeamSummaryCard extends StatelessWidget {
+  /// 보여 줄 팀 [team]과 초대 코드 복사 동작 [onCopyCode]로 카드를 만든다.
   const TeamSummaryCard({
     super.key,
     required this.team,
@@ -17,6 +19,7 @@ class TeamSummaryCard extends StatelessWidget {
   final TeamViewData team;
   final VoidCallback onCopyCode;
 
+  /// 팀 이름과 수를 아바타와 한 줄에 두고, 아래 점선 상자에 초대 코드와 [복사] 버튼을 그린다. 화면 읽기 프로그램은 아바타 대신 구성원 이름을 읽는다.
   @override
   Widget build(BuildContext context) {
     return Card(
