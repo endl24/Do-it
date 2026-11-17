@@ -7,7 +7,9 @@ import '../../../core/theme/app_typography.dart';
 import '../../../widgets/notice_box.dart';
 import '../../../widgets/section_header.dart';
 
+/// 13 팀 만들기·참여 화면의 입력 폼. 새 팀 만들기 카드와 초대 코드 참여 카드, 연결 안내를 보여 준다.
 class TeamSetupForm extends StatelessWidget {
+  /// 입력 컨트롤러, 연결·요청 상태, 오류 문구와 입력·제출 동작으로 폼을 만든다.
   const TeamSetupForm({
     super.key,
     required this.nameController,
@@ -37,6 +39,9 @@ class TeamSetupForm extends StatelessWidget {
   final VoidCallback onCreate;
   final VoidCallback onJoin;
 
+  /// 팀 이름 입력 카드와 '또는' 구분선, 초대 코드 참여 카드, 네트워크 안내를 차례로 그린다.
+  ///
+  /// 연결이 끊겼거나 요청 중이면 입력과 버튼을 막는다. 팀 이름은 20자까지 받고 비어 있으면 [만들기]를 막는다.
   @override
   Widget build(BuildContext context) {
     final isEnabled = isOnline && !isSubmitting;
@@ -119,7 +124,9 @@ class TeamSetupForm extends StatelessWidget {
   }
 }
 
+/// 6자리 초대 코드를 입력해 팀에 참여하는 카드.
 class _JoinCard extends StatelessWidget {
+  /// 입력 컨트롤러, 사용 가능·요청 중 여부, 오류 문구와 입력·참여 동작으로 카드를 만든다.
   const _JoinCard({
     required this.controller,
     required this.isEnabled,
@@ -138,6 +145,7 @@ class _JoinCard extends StatelessWidget {
   final ValueChanged<String> onChanged;
   final VoidCallback onJoin;
 
+  /// 영문·숫자만 6자리까지 받는 가운데 정렬 입력칸과 [참여하기] 버튼을 그린다. 오류가 있으면 입력칸 테두리를 빨갛게 하고 아래에 오류 안내를 띄운다.
   @override
   Widget build(BuildContext context) {
     final errorBorder = error == null
@@ -188,12 +196,15 @@ class _JoinCard extends StatelessWidget {
   }
 }
 
+/// 제목과 내용을 카드 안에 묶어 보여 주는 폼 카드 틀.
 class _FormCard extends StatelessWidget {
+  /// 카드 제목 [title]과 내용 [children]으로 카드를 만든다.
   const _FormCard({required this.title, required this.children});
 
   final String title;
   final List<Widget> children;
 
+  /// 제목 아래에 내용 위젯을 가로로 꽉 채워 쌓는다.
   @override
   Widget build(BuildContext context) {
     return Card(
