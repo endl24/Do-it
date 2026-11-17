@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_spacing.dart';
 
-// 인증 입력값을 검증하고 로그인·가입·요청 중 상태를 표시한다.
+/// 인증 입력값을 검증하고 로그인·가입·요청 중 상태를 표시한다.
 class EmailAuthForm extends StatelessWidget {
+  /// 폼 키, 이메일·비밀번호·비밀번호 확인 컨트롤러, 가입 모드·요청 중 여부, 오류 문구와 제출·모드 전환 동작으로 폼을 만든다.
   const EmailAuthForm({
     super.key,
     required this.formKey,
@@ -27,7 +28,7 @@ class EmailAuthForm extends StatelessWidget {
   final VoidCallback onSubmit;
   final VoidCallback onSwitchMode;
 
-  // 필수 입력과 비밀번호 확인을 검증하고 인증 요청 중 입력·버튼을 비활성화한다.
+  /// 필수 입력과 비밀번호 확인을 검증하고 인증 요청 중 입력·버튼을 비활성화한다.
   @override
   Widget build(BuildContext context) => Form(
     key: formKey,
@@ -101,8 +102,9 @@ class EmailAuthForm extends StatelessWidget {
   );
 }
 
-// 비밀번호를 숨겨 입력받고 가입 시 최소 길이를 검증한다.
+/// 비밀번호를 숨겨 입력받고 가입 시 최소 길이를 검증한다.
 class _PasswordField extends StatelessWidget {
+  /// 입력 컨트롤러, 가입 모드·요청 중 여부와 제출 동작으로 비밀번호 칸을 만든다.
   const _PasswordField({
     required this.controller,
     required this.isSigningUp,
@@ -115,7 +117,7 @@ class _PasswordField extends StatelessWidget {
   final bool isSubmitting;
   final VoidCallback onSubmit;
 
-  // 로그인·가입 모드에 맞는 자동 완성과 제출 동작을 구성한다.
+  /// 로그인·가입 모드에 맞는 자동 완성과 제출 동작을 구성한다.
   @override
   Widget build(BuildContext context) => TextFormField(
     key: const ValueKey('auth-password'),
