@@ -1,8 +1,9 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 
-// 실행 시 전달한 플랫폼별 Firebase 설정을 보관하고 필수 값을 검증한다.
+/// 실행 시 전달한 플랫폼별 Firebase 설정을 보관하고 필수 값을 검증한다.
 class FirebaseEnvironment {
+  /// 실행할 때 `--dart-define-from-file`로 넘긴 값을 기본값으로 읽어 설정을 만든다. 테스트에서는 값을 직접 넘길 수 있다.
   const FirebaseEnvironment({
     this.projectId = const String.fromEnvironment('FIREBASE_PROJECT_ID'),
     this.messagingSenderId = const String.fromEnvironment(
@@ -25,7 +26,7 @@ class FirebaseEnvironment {
   final String iosAppId;
   final String iosBundleId;
 
-  // 현재 플랫폼의 설정을 검증한다. 설정이 전혀 없으면 로컬 실행을 선택한다.
+  /// 현재 플랫폼의 설정을 검증한다. 설정이 전혀 없으면 로컬 실행을 선택한다.
   FirebaseOptions? optionsFor(TargetPlatform platform) {
     final String apiKey;
     final String appId;
@@ -57,7 +58,7 @@ class FirebaseEnvironment {
   }
 }
 
-// Android·iOS에 설정이 있을 때만 Firebase를 초기화하고 실행 여부를 반환한다.
+/// Android·iOS에 설정이 있을 때만 Firebase를 초기화하고 실행 여부를 반환한다.
 Future<bool> initializeFirebaseIfConfigured({
   FirebaseEnvironment environment = const FirebaseEnvironment(),
   TargetPlatform? platform,

@@ -2,27 +2,30 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'account_service.dart';
 
-// Firebase Auth의 계정 상태와 이메일 인증 요청을 앱의 인증 인터페이스에 연결한다.
+/// Firebase Auth의 계정 상태와 이메일 인증 요청을 앱의 인증 인터페이스에 연결한다.
 class FirebaseAccountService implements AccountService {
+  /// Firebase 인증 [auth]로 서비스를 만든다. 없으면 앱 기본 Firebase 인증을 쓴다.
   FirebaseAccountService({FirebaseAuth? auth})
     : _auth = auth ?? FirebaseAuth.instance;
 
   final FirebaseAuth _auth;
 
+  /// Firebase에 로그인된 이메일 계정을 앱 계정 정보로 바꿔 돌려준다.
   @override
   AccountIdentity? get currentAccount => _identity(_auth.currentUser);
 
+  /// Firebase 로그인 상태가 바뀔 때마다 앱 계정 정보로 바꿔 보낸다.
   @override
   Stream<AccountIdentity?> get accountChanges =>
       _auth.authStateChanges().map(_identity);
 
-  // 익명 계정은 이메일로 연동된 계정과 구분한다.
+  /// 익명 계정은 이메일로 연동된 계정과 구분한다.
   AccountIdentity? _identity(User? user) =>
       user == null || user.isAnonymous || user.email == null
       ? null
       : AccountIdentity(uid: user.uid, email: user.email!);
 
-  // Firebase 오류 코드를 안전한 사용자 안내로 변환한다.
+  /// Firebase 오류 코드를 안전한 사용자 안내로 변환한다.
   static AccountFailure failureForCode(String code) =>
       AccountFailure(switch (code) {
         'invalid-credential' ||
@@ -39,7 +42,7 @@ class FirebaseAccountService implements AccountService {
         _ => '계정 요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.',
       });
 
-  // 인증 요청을 실행하고 Firebase의 원본 오류 대신 안내 메시지를 전달한다.
+  /// 인증 요청을 실행하고 Firebase의 원본 오류 대신 안내 메시지를 전달한다.
   Future<void> _request(Future<void> Function() action) async {
     try {
       await action();
@@ -48,13 +51,13 @@ class FirebaseAccountService implements AccountService {
     }
   }
 
-  // 기존 이메일 계정으로 로그인한다. 비밀번호는 변형하거나 별도로 저장하지 않는다.
+  /// 기존 이메일 계정으로 로그인한다. 비밀번호는 변형하거나 별도로 저장하지 않는다.
   @override
   Future<void> signIn(String email, String password) => _request(() async {
     await _auth.signInWithEmailAndPassword(email: email, password: password);
   });
 
-  // 새 이메일 계정을 생성한다. 생성에 성공하면 Firebase가 로그인 상태를 유지한다.
+  /// 새 이메일 계정을 생성한다. 생성에 성공하면 Firebase가 로그인 상태를 유지한다.
   @override
   Future<void> signUp(String email, String password) => _request(() async {
     await _auth.createUserWithEmailAndPassword(
@@ -63,7 +66,7 @@ class FirebaseAccountService implements AccountService {
     );
   });
 
-  // 현재 기기에서 로그아웃하고 계정 변경 구독으로 화면 갱신을 알린다.
+  /// 현재 기기에서 로그아웃하고 계정 변경 구독으로 화면 갱신을 알린다.
   @override
   Future<void> signOut() => _request(_auth.signOut);
 }

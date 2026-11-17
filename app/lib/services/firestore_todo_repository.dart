@@ -3,8 +3,9 @@ import 'firestore_todo_store.dart';
 import 'live_todo_repository.dart';
 import 'todo_repository.dart';
 
-// 계정별 서버 할 일을 조회·저장하고 삭제 기록으로 오래된 수정의 복원을 막는다.
+/// 계정별 서버 할 일을 조회·저장하고 삭제 기록으로 오래된 수정의 복원을 막는다.
 class FirestoreTodoRepository implements TodoRepository, LiveTodoRepository {
+  /// Firestore 문서를 다루는 [store]로 저장소를 만든다. [clock]은 삭제·복구 시각을 정할 때 쓰며, 테스트에서 바꿔 넣는다.
   FirestoreTodoRepository(this.store, {DateTime Function()? clock})
     : _clock = clock ?? DateTime.now;
 
@@ -12,19 +13,19 @@ class FirestoreTodoRepository implements TodoRepository, LiveTodoRepository {
   final DateTime Function() _clock;
   final Map<String, String> _undoTokens = {};
 
-  // 삭제 문서를 숨기고 SDK의 대기·실패 상태를 공통 Todo 모델에 전달한다.
+  /// 삭제 문서를 숨기고 SDK의 대기·실패 상태를 공통 Todo 모델에 전달한다.
   @override
   Future<List<Todo>> getAll() async {
     final documents = await store.readAll();
     return _todosFrom(documents);
   }
 
-  // 서버에서 다시 받은 목록을 기존 Todo 모델로 변환한다.
+  /// 서버에서 다시 받은 목록을 기존 Todo 모델로 변환한다.
   @override
   Future<List<Todo>> refreshFromServer() async =>
       _todosFrom(await store.readServer());
 
-  // 삭제 문서의 전송 대기도 세되 삭제된 할 일 자체는 목록에서 숨긴다.
+  /// 삭제 문서의 전송 대기도 세되 삭제된 할 일 자체는 목록에서 숨긴다.
   @override
   Stream<TodoSyncSnapshot> watchTodos() => store.watchAll().map(
     (documents) => TodoSyncSnapshot(
@@ -38,7 +39,7 @@ class FirestoreTodoRepository implements TodoRepository, LiveTodoRepository {
     ),
   );
 
-  // SDK 문서의 대기·실패 상태를 화면에서 사용하는 공통 모델에 옮긴다.
+  /// SDK 문서의 대기·실패 상태를 화면에서 사용하는 공통 모델에 옮긴다.
   List<Todo> _todosFrom(List<RemoteTodoDocument> documents) {
     return [
       for (final document in documents)
@@ -56,7 +57,7 @@ class FirestoreTodoRepository implements TodoRepository, LiveTodoRepository {
     ];
   }
 
-  // updatedAt을 유지해 수정 순서를 비교한다. 명시적 실행 취소만 삭제를 복구할 수 있다.
+  /// updatedAt을 유지해 수정 순서를 비교한다. 명시적 실행 취소만 삭제를 복구할 수 있다.
   @override
   Future<void> save(Todo todo) async {
     final cached = await store.readCached(todo.id);
@@ -90,7 +91,7 @@ class FirestoreTodoRepository implements TodoRepository, LiveTodoRepository {
     _undoTokens.remove(todo.id);
   }
 
-  // 물리 삭제 대신 삭제 토큰을 남긴다. 이후의 일반 수정은 서버 규칙에서도 차단한다.
+  /// 물리 삭제 대신 삭제 토큰을 남긴다. 이후의 일반 수정은 서버 규칙에서도 차단한다.
   @override
   Future<void> delete(String id) async {
     final token = store.newOperationId();
@@ -104,7 +105,7 @@ class FirestoreTodoRepository implements TodoRepository, LiveTodoRepository {
     _undoTokens[id] = token;
   }
 
-  // 복구 시각이 삭제 시각보다 앞서지 않도록 보정한다.
+  /// 복구 시각이 삭제 시각보다 앞서지 않도록 보정한다.
   DateTime _later(DateTime first, DateTime? second) =>
       second != null && second.isAfter(first) ? second : first;
 }

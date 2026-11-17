@@ -5,8 +5,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/todo.dart';
 import 'firestore_todo_store.dart';
 
-// 현재 계정의 Firestore 경로와 SDK의 영구 오프라인 캐시를 사용한다.
+/// 현재 계정의 Firestore 경로와 SDK의 영구 오프라인 캐시를 사용한다.
 class FirebaseTodoStore implements FirestoreTodoStore {
+  /// 계정 [uid]의 할 일 저장소를 만든다. [firestore]가 없으면 앱 기본 Firestore를 쓴다.
   FirebaseTodoStore({required this.uid, FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
 
@@ -16,10 +17,11 @@ class FirebaseTodoStore implements FirestoreTodoStore {
   final Map<String, String> _operations = {};
   final _writeChanges = StreamController<void>.broadcast();
 
+  /// 현재 계정의 할 일 문서 모음(`users/{uid}/todos`)을 돌려준다.
   CollectionReference<Map<String, dynamic>> get _todos =>
       _firestore.collection('users').doc(uid).collection('todos');
 
-  // 캐시로 대체하지 않고 서버 응답을 요청해 수동 새로고침 실패를 구분한다.
+  /// 캐시로 대체하지 않고 서버 응답을 요청해 수동 새로고침 실패를 구분한다.
   @override
   Future<List<RemoteTodoDocument>> readServer() async {
     final snapshot = await _todos
@@ -28,7 +30,7 @@ class FirebaseTodoStore implements FirestoreTodoStore {
     return snapshot.docs.map(_document).toList(growable: false);
   }
 
-  // 문서 내용뿐 아니라 서버 전송 완료에 따른 대기 상태 변경도 전달한다.
+  /// 문서 내용뿐 아니라 서버 전송 완료에 따른 대기 상태 변경도 전달한다.
   @override
   Stream<List<RemoteTodoDocument>> watchAll() => Stream.multi((controller) {
     List<RemoteTodoDocument>? latest;
@@ -47,7 +49,7 @@ class FirebaseTodoStore implements FirestoreTodoStore {
     };
   });
 
-  // 서버 조회가 지연되면 이미 저장된 캐시를 사용한다. 서버 권한 오류는 숨기지 않는다.
+  /// 서버 조회가 지연되면 이미 저장된 캐시를 사용한다. 서버 권한 오류는 숨기지 않는다.
   @override
   Future<List<RemoteTodoDocument>> readAll() async {
     QuerySnapshot<Map<String, dynamic>> snapshot;
@@ -62,7 +64,7 @@ class FirebaseTodoStore implements FirestoreTodoStore {
     return snapshot.docs.map(_document).toList(growable: false);
   }
 
-  // 시간 비교에 사용할 Firestore Timestamp를 기존 모델이 읽을 수 있는 값으로 변환한다.
+  /// 시간 비교에 사용할 Firestore Timestamp를 기존 모델이 읽을 수 있는 값으로 변환한다.
   RemoteTodoDocument _document(
     DocumentSnapshot<Map<String, dynamic>> snapshot,
   ) {
@@ -78,7 +80,7 @@ class FirebaseTodoStore implements FirestoreTodoStore {
     );
   }
 
-  // 로컬 캐시에서 삭제 기록을 확인한다. 캐시가 없는 경우에는 서버 규칙이 충돌을 판정한다.
+  /// 로컬 캐시에서 삭제 기록을 확인한다. 캐시가 없는 경우에는 서버 규칙이 충돌을 판정한다.
   @override
   Future<RemoteTodoDocument?> readCached(String id) async {
     try {
@@ -92,7 +94,7 @@ class FirebaseTodoStore implements FirestoreTodoStore {
     }
   }
 
-  // 로컬 반영을 확인한 뒤 반환하고, 늦게 도착한 서버 거절은 실패 상태로 보관한다.
+  /// 로컬 반영을 확인한 뒤 반환하고, 늦게 도착한 서버 거절은 실패 상태로 보관한다.
   @override
   Future<void> enqueue(String id, Map<String, Object?> data) async {
     final operationId = data['operationId']! as String;
@@ -144,7 +146,7 @@ class FirebaseTodoStore implements FirestoreTodoStore {
     }
   }
 
-  // 같은 ID의 더 최신 값과 삭제 기록은 보존하고, 서버 확인 후 이관을 완료한다.
+  /// 같은 ID의 더 최신 값과 삭제 기록은 보존하고, 서버 확인 후 이관을 완료한다.
   @override
   Future<void> importTodo(Todo todo) async {
     final reference = _todos.doc(todo.id);
@@ -172,9 +174,11 @@ class FirebaseTodoStore implements FirestoreTodoStore {
         .timeout(const Duration(seconds: 20));
   }
 
+  /// [id] 할 일의 마지막 쓰기를 서버가 거절했는지 돌려준다.
   @override
   bool hasWriteFailure(String id) => _failures.containsKey(id);
 
+  /// 서버에 보내지 않고 새 Firestore 문서 ID를 만들어 작업 ID로 돌려준다.
   @override
   String newOperationId() => _todos.doc().id;
 }
