@@ -151,8 +151,24 @@
 - 모든 값이 요구사항 B2의 3초 안입니다.
 - Android ML Kit은 손글씨체 메모에서 5줄 중 3줄만 읽었고 오타가 있었습니다. 07에서 고치거나 빼고 등록할 수 있습니다.
 
-## 실행
-Flutter SDK와 Android 에뮬레이터 또는 iOS 시뮬레이터가 필요합니다. 아래 명령은 저장소 최상위 폴더에서 시작합니다.
+## 실행 절차
+아래 명령은 저장소 최상위 폴더에서 시작합니다.
+
+### 버전과 실행 기기
+| 항목 | 값 |
+| --- | --- |
+| Flutter | 3.47.5 (stable) |
+| Dart | 3.13.4 |
+| Android | Android Gradle 플러그인 9.1.0, Kotlin 2.4.0, Gradle 9.3.1. compileSdk·minSdk·targetSdk는 Flutter 기본값 |
+| iOS | 배포 대상 iOS 15.0 (사진 인식은 iOS 16 이상), Xcode 27.2 |
+
+| MP | 확인한 기기 |
+| --- | --- |
+| MP1·MP2 | iOS 시뮬레이터 iPhone 17 (iOS 26.5) |
+| MP3 | Android 에뮬레이터 두 대 `doit-A`, `doit-B` (API 36) |
+| MP4 | Android 에뮬레이터 Pixel 9 (API 37, arm64), iOS 시뮬레이터 iPhone 17 Pro (iOS 26.5) |
+
+설치된 버전은 `flutter --version`으로 확인합니다. 다른 버전이면 `flutter pub get`이 `pubspec.yaml`의 Dart 버전 조건(`^3.13.4`)에 맞지 않는다고 멈출 수 있습니다.
 
 ### 서버 없이 실행
 ```bash
@@ -212,6 +228,145 @@ flutter run -d <기기 B ID> --dart-define-from-file=.env
 flutter analyze
 flutter test
 ```
+
+## 확인 방법
+<!-- submission:repo-only -->
+MP별 평가 기준을 `###` 소제목으로 적었습니다. 스크린샷 파일은 저장소에서는 `screenshots/mp1/`처럼 MP별 폴더에 있고, MP별 제출 ZIP에서는 그 MP의 사진만 `screenshots/` 바로 아래에 들어갑니다. ZIP의 README에는 그 MP의 확인 방법만 남깁니다(`tool/make_submission.py`).
+<!-- /submission:repo-only -->
+
+<!-- submission:mp1 -->
+### 항목 추가·완료 토글
+- 조작: [서버 없이 실행](#서버-없이-실행)으로 앱을 열고 [할 일 추가]에서 제목을 입력해 [추가]를 누른 뒤, 목록 카드의 체크박스를 누른다
+- 기대 결과: 새 할 일이 목록에 나타나고 남은 개수가 늘어난다. 체크하면 취소선이 그어지며 목록 아래로 내려가고 남은 개수가 줄어든다
+- 스크린샷: 02_add_form.png, 03_list.png, 04_completed.png
+
+### 빈 상태 안내
+- 조작: 처음 설치한 상태(또는 할 일을 모두 삭제한 상태)로 할 일 탭을 연다
+- 기대 결과: 목록 대신 '아직 등록한 할 일이 없어요' 안내와 [할 일 직접 추가], [사진에서 가져오기] 버튼이 보인다
+- 스크린샷: 01_empty.png
+
+### README 실행 절차·기능 목록
+- 조작: README의 '실행 절차'와 '구현 기능 > MP1' 절을 읽는다
+- 기대 결과: 실행 명령·버전·기기와 목록·추가·완료 토글·빈 상태 기능 설명이 있다
+- 스크린샷: 없음
+
+### 민감정보 없음
+- 조작: 제출 ZIP에서 `.env`, `google-services.json`, `GoogleService-Info.plist`, 키 문자열(`AIza`)을 찾는다
+- 기대 결과: 하나도 없다
+- 스크린샷: 없음
+
+### 입력 데이터·스크린샷 개인정보 없음
+- 조작: 스크린샷 4장과 입력한 할 일 제목을 확인한다
+- 기대 결과: 제목은 가상 문장이고 실명·연락처·인물 사진이 없다
+- 스크린샷: 01_empty.png, 02_add_form.png, 03_list.png, 04_completed.png
+
+### README 실행 절차·확인 방법 절
+- 조작: README의 '실행 절차'와 '확인 방법' 제목을 찾는다
+- 기대 결과: 두 절이 있고, 확인 방법에 기준마다 조작·기대 결과·스크린샷이 있다
+- 스크린샷: 없음
+
+시험 데이터: 앱에서 직접 입력한 가상 할 일 `Write MP1 report`, `Buy textbook`, `Review lecture notes` (별도 데이터 파일 없음)
+
+네트워크: 불필요 (서버 없이 실행)
+<!-- /submission:mp1 -->
+
+<!-- submission:mp2 -->
+### 수정·삭제·필터
+- 조작: 카드를 눌러 상세를 열고 [수정]에서 제목을 바꿔 저장한다. 다른 할 일은 [삭제] → 확인 대화상자에서 삭제한 뒤 스낵바의 [실행 취소]를 본다. 목록 위의 [전체], [미완료], [완료]를 차례로 누른다
+- 기대 결과: 바뀐 제목이 목록에 보이고, 삭제한 할 일은 사라졌다가 [실행 취소]로 돌아온다. 필터마다 해당 상태의 할 일만 보인다
+- 스크린샷: 01_edit_form.png, 02_edit_saved.png, 03_delete_confirm.png, 04_delete_undo.png, 05_filter_all.png, 06_filter_incomplete.png, 07_filter_completed.png
+
+### 재시작 후 데이터 유지
+- 조작: 할 일을 몇 개 등록하고 일부를 완료한 뒤, 앱 전환기에서 앱을 완전히 종료하고 다시 실행한다
+- 기대 결과: 종료 전과 같은 할 일과 완료 상태가 보인다
+- 스크린샷: 08_restart_before.png, 09_restart_after.png
+
+### 저장 방식 선택 이유·대안 비교
+- 조작: README의 '로컬 저장 방식 비교' 절을 읽는다
+- 기대 결과: SQLite를 shared_preferences·Hive·drift와 비교한 표와 선택 이유가 있다
+- 스크린샷: 없음
+
+### 민감정보 없음
+- 조작: 제출 ZIP에서 `.env`, `google-services.json`, `GoogleService-Info.plist`, 키 문자열(`AIza`)을 찾는다
+- 기대 결과: 하나도 없다
+- 스크린샷: 없음
+
+### README 실행 절차·확인 방법 절
+- 조작: README의 '실행 절차'와 '확인 방법' 제목을 찾는다
+- 기대 결과: 두 절이 있고, 확인 방법에 기준마다 조작·기대 결과·스크린샷이 있다
+- 스크린샷: 없음
+
+시험 데이터: 앱에서 직접 입력한 가상 할 일. 재시작 유지는 `app/test/services/sqlite_todo_repository_test.dart`로도 확인한다(`flutter test`)
+
+네트워크: 불필요 (서버 없이 실행)
+<!-- /submission:mp2 -->
+
+<!-- submission:mp3 -->
+### 기기 A 추가 → 기기 B 새로고침 후 표시
+- 조작: [두 기기에서 동기화 확인](#두-기기에서-동기화-확인)대로 두 기기에서 실행해 같은 시험 계정으로 로그인한다. 기기 A에서 할 일을 추가하고, 기기 B 목록을 아래로 당겨 새로고침한다. 수정·완료·삭제도 같은 방법으로 확인한다
+- 기대 결과: 기기 B에 같은 할 일이 보이고 두 기기 모두 `동기화 완료`로 표시된다. 기기 A의 수정·완료·삭제도 기기 B에 반영된다
+- 스크린샷: 01_deviceA_add.jpg, 02_deviceB_refresh.jpg, 07_deviceA_edit.jpg, 08_deviceB_edit_synced.jpg, 09_deviceA_complete.jpg, 10_deviceB_complete_synced.jpg, 11_deviceA_delete.jpg, 12_deviceB_delete_synced.jpg
+
+### 오프라인 작성 → 온라인 복귀 후 서버 반영
+- 조작: 기기 A를 비행기 모드로 바꾸고 할 일을 추가한다. 비행기 모드를 끈 뒤 Firebase 콘솔의 Firestore에서 `users/{uid}/todos`를 열고, 기기 B를 새로고침한다
+- 기대 결과: 오프라인 동안 기기 A에 오프라인 배너와 `동기화 대기 1`이 보인다. 복귀하면 `동기화 완료`로 바뀌고, 콘솔에 같은 제목의 문서가 생기며 기기 B에도 표시된다
+- 스크린샷: 03_deviceA_offline_add.jpg, 04_deviceA_back_online.jpg, 05_console_synced.jpg, 06_deviceB_after_online.jpg
+
+### 동기화 충돌 처리 방침
+- 조작: README의 '충돌 처리 방침' 절을 읽는다
+- 기대 결과: 같은 할 일 동시 수정(최신 수정 우선), 삭제와 수정 충돌(삭제 우선), 오프라인 작성, 첫 로그인 이관의 처리가 표로 있다
+- 스크린샷: 없음
+
+### 설정 키 분리·.env.example만 제출
+- 조작: ZIP 최상위의 `.env.example`을 열고, `app/lib`에서 키 문자열(`AIza`)을 찾는다
+- 기대 결과: `.env.example`에는 키 이름만 있고 값은 비어 있다. 코드는 실행할 때 넘긴 값을 `String.fromEnvironment`로 읽고(`app/lib/services/firebase_bootstrap.dart`), 키 문자열은 없다. `.env`, `google-services.json`, `GoogleService-Info.plist`는 ZIP에 없다
+- 스크린샷: 없음
+
+### 입력 데이터·스크린샷 개인정보 없음
+- 조작: 스크린샷 12장과 입력한 할 일 제목을 확인한다
+- 기대 결과: 제목은 가상 문장이고 계정 이메일·실명·연락처가 보이지 않는다. 콘솔 사진은 프로젝트 ID와 사용자 UID가 보이지 않게 잘랐다
+- 스크린샷: 01_deviceA_add.jpg, 05_console_synced.jpg
+
+### README 실행 절차·확인 방법 절
+- 조작: README의 '실행 절차'와 '확인 방법' 제목을 찾는다
+- 기대 결과: 두 절이 있고, 확인 방법에 기준마다 조작·기대 결과·스크린샷이 있다
+- 스크린샷: 없음
+
+시험 데이터: 앱에서 직접 입력한 가상 할 일(`기기 A에서 추가한 할 일`, `기기 A 오프라인 상태에서 작성한 할 일`). 로그인은 검수자가 만든 시험용 이메일 계정으로 한다. Firebase 설정 값은 [백엔드 설정 절차](#백엔드-설정-절차)대로 각자 프로젝트에서 받는다
+
+네트워크: 온라인. 오프라인 반영 확인 구간에서만 기기 A를 비행기 모드로 둔다
+<!-- /submission:mp3 -->
+
+<!-- submission:mp4 -->
+### 사진 → 항목 후보 → 선택 저장
+- 조작: 목록 헤더의 카메라 아이콘을 누르고 06에서 메모를 [촬영]하거나 [앨범]에서 고른다. 07에서 후보를 체크하거나 연필로 고친 뒤 [선택한 N개 할 일로 등록]을 누른다
+- 기대 결과: 07에 메모 줄마다 후보가 보이고, 체크한 후보만 메모 순서대로 목록 맨 위에 추가된다
+- 스크린샷: 04_camera.png, 05_review_airplane.png, 06_added_airplane.png, 08_review_handwriting_ios.png, 09_added_ios.png
+
+### 비행기 모드 인식
+- 조작: 비행기 모드를 켜고 와이파이가 꺼진 것을 확인한 뒤 위 흐름을 반복한다
+- 기대 결과: 네트워크 없이도 07에 후보가 나오고 등록된다
+- 스크린샷: 05_review_airplane.png, 06_added_airplane.png, 07_review_handwriting_android.png
+
+### 원본 사진 미저장·권한 거부 안내
+- 조작: 카메라 권한을 거부한 상태로 카메라 아이콘을 누른다. 다시 묻지 않는 거부 상태에서 [설정에서 권한 켜기]를 누른다. 사진 미저장은 '원본 사진을 저장하지 않는 방법' 절과 `flutter test test/services/device_memo_scanner_test.dart`로 확인한다
+- 기대 결과: 09가 권한이 필요한 이유를 안내하고 앱 설정 화면으로 보낸다. 등록하거나 버린 뒤 앱 폴더에 사진이 남지 않고, 할 일에는 글자만 저장된다
+- 스크린샷: 01_permission_guide.png, 02_permission_denied.png, 03_permission_open_settings.png
+
+### 처리 시간 측정값·민감정보 없음
+- 조작: README의 '처리 시간' 절을 읽고, 제출 ZIP에서 `.env`와 키 문자열(`AIza`)을 찾는다
+- 기대 결과: 기기·빌드·입력 조건별 평균·최대 ms 값이 표로 있고, 민감정보와 원본 메모 사진은 ZIP에 없다
+- 스크린샷: 없음
+
+### README 실행 절차·확인 방법 절
+- 조작: README의 '실행 절차'와 '확인 방법' 제목을 찾는다
+- 기대 결과: 두 절이 있고, 확인 방법에 기준마다 조작·기대 결과·스크린샷이 있다
+- 스크린샷: 없음
+
+시험 데이터: 개인정보 없는 5줄짜리 가상 할 일 메모 사진 두 장(인쇄체, 손글씨 글꼴). 내용은 '처리 시간' 절에 있고, 사진 파일은 제출물에 넣지 않았다
+
+네트워크: 비행기 모드 (서버 없이 실행)
+<!-- /submission:mp4 -->
 
 ## 구현 기능
 ### MP1 — 화면과 상태 관리
@@ -273,7 +428,9 @@ do_it/
 ├── prompts_log.md
 ├── firebase.json       # Firebase CLI 설정 (보안 규칙 파일 위치, 로컬 에뮬레이터)
 ├── firestore.rules     # Firestore 보안 규칙 (본인 계정의 할 일만 읽고 쓰기)
-├── screenshots/        # 제출용 화면 사진 (MP별 폴더)
+├── screenshots/        # 제출용 화면 사진 (MP별 폴더 mp1–mp4, 폴더마다 01_부터 12장 이하)
+├── tool/
+│   └── make_submission.py  # MP별 제출 ZIP 만들기
 └── app/
     ├── .env.example    # Firebase 설정 키 목록 (값은 비워 둠, 실제 값은 .env)
     ├── lib/

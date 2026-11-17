@@ -17,8 +17,8 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-          # 팀 로컬과 같은 3.47로 고정. 3.50부터 material.dart import가 deprecated라 analyze가 실패한다.
-          flutter-version: 3.47.9
+          # ANT 평가 기준 버전(3.47.5 / Dart 3.13.4)으로 고정. 3.50부터 material.dart import가 deprecated라 analyze가 실패한다.
+          flutter-version: 3.47.5
           cache: true
       - run: flutter pub get
       - run: dart format --output=none --set-exit-if-changed .
