@@ -28,6 +28,15 @@ MAX_SHOT_BYTES = 2 * 1024 * 1024
 FORBIDDEN_DIRS = ("build/", ".dart_tool/", ".gradle/", "Pods/", "DerivedData/", "node_modules/")
 FORBIDDEN_NAMES = (".env", "google-services.json", "GoogleService-Info.plist")
 KEY_PATTERN = re.compile(rb"AIza[0-9A-Za-z_\-]{35}")
+# ANT가 지정한 Flutter 3.47.5의 커밋. 3.47.4 커밋이 남은 app/.metadata로 제출해 '개발 환경' 보완 판정을 받았다(2026-11-23).
+FLUTTER_REVISION = "6a19cca56475dbfba1478ee68d7bd0c2ef891da1"
+# ANT 'README 필수 절' 검사가 제목으로 찾는 절. 2026-11-23 결과 화면의 지적을 반영했다.
+REQUIRED_HEADINGS = {
+    "mp1": ("실행 절차", "확인 방법", "구현 기능", "화면 구성"),
+    "mp2": ("실행 절차", "확인 방법", "로컬 저장 방식 비교"),
+    "mp3": ("실행 절차", "확인 방법", "BaaS 선택", "충돌 처리 방침", "백엔드 설정 절차"),
+    "mp4": ("실행 절차", "확인 방법", "인식 기능", "검토 UI 흐름", "처리 시간"),
+}
 
 
 def git(*args: str) -> bytes:
@@ -97,9 +106,13 @@ def main() -> None:
         for name in (n.strip() for n in listed.split(",")):
             if name != "없음" and name not in shot_names:
                 errors.append(f"README가 적은 스크린샷이 없습니다: {name}")
-    for heading in ("## 실행 절차", "## 확인 방법"):
-        if not re.search(rf"^{heading}$", readme, flags=re.M):
-            errors.append(f"README에 '{heading}' 절이 없습니다.")
+    for heading in REQUIRED_HEADINGS[mp]:
+        if not re.search(rf"^#{{2,3}} {re.escape(heading)}$", readme, flags=re.M):
+            errors.append(f"README에 '{heading}' 절(## 또는 ###)이 없습니다.")
+    metadata = entries["app/.metadata"].decode()
+    revisions = set(re.findall(r"revision: \"?([0-9a-f]{40})", metadata))
+    if revisions != {FLUTTER_REVISION}:
+        errors.append(f"app/.metadata의 Flutter 커밋이 3.47.5가 아닙니다: {sorted(revisions)}")
     for path, data in entries.items():
         if any(f"/{d}" in f"/{path}" for d in FORBIDDEN_DIRS):
             errors.append(f"빌드 산출물: {path}")
