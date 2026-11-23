@@ -104,7 +104,7 @@ def main() -> None:
             errors.append(f"2MB를 넘는 스크린샷: {name}")
     for listed in re.findall(r"^- 스크린샷: (.+)$", readme, flags=re.M):
         for name in (n.strip() for n in listed.split(",")):
-            if name != "없음" and name not in shot_names:
+            if name not in shot_names:
                 errors.append(f"README가 적은 스크린샷이 없습니다: {name}")
     for heading in REQUIRED_HEADINGS[mp]:
         if not re.search(rf"^#{{2,3}} {re.escape(heading)}$", readme, flags=re.M):
