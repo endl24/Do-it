@@ -196,7 +196,7 @@
 | MP3 | Android 에뮬레이터 두 대 `doit-A`, `doit-B` (API 36) |
 | MP4 | Android 에뮬레이터 Pixel 9 (API 37, arm64), iOS 시뮬레이터 iPhone 17 Pro (iOS 26.5) |
 
-설치된 버전은 `flutter --version`으로 확인합니다. 다른 버전이면 `flutter pub get`이 `pubspec.yaml`의 Dart 버전 조건(`^3.13.4`)에 맞지 않는다고 멈출 수 있습니다.
+설치된 버전은 `flutter --version`으로 확인합니다. `pubspec.yaml`이 Flutter를 `3.47.5`로, Dart를 `^3.13.4`로 고정하므로 다른 버전이면 `flutter pub get`이 버전 조건에 맞지 않는다고 멈춥니다.
 
 ### 서버 없이 실행
 ```bash

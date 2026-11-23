@@ -20,6 +20,8 @@ version: 1.0.0+1
 
 environment:
   sdk: ^3.13.4
+  # ANT가 지정한 개발 환경(Flutter 3.47.5 / Dart 3.13.4)으로 고정한다.
+  flutter: 3.47.5
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
