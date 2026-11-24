@@ -103,7 +103,7 @@
 2. **앱 등록:** 같은 프로젝트에 Android 앱(패키지 이름 `com.example.do_it`)과 iOS 앱(번들 ID `com.example.doIt`)을 등록합니다. 앱은 `.env` 값으로 Firebase를 초기화하므로, 등록할 때 받는 `google-services.json`·`GoogleService-Info.plist`는 저장소에 넣지 않습니다.
 3. **인증 켜기:** Authentication → 로그인 방법에서 이메일/비밀번호를 사용 설정합니다.
 4. **Firestore 만들기:** Firestore Database에서 데이터베이스를 만듭니다. 프로덕션 모드(기본 거부)로 시작합니다.
-5. **보안 규칙 적용:** 저장소 최상위의 `firestore.rules`를 Firestore → 규칙 탭에 붙여 넣고 게시합니다. 본인 계정(`users/{uid}`)의 할 일만 읽고 쓸 수 있고, 다른 경로는 모두 거부됩니다. Firebase CLI를 쓰면 저장소 최상위에서 아래처럼 적용할 수도 있습니다.
+5. **보안 규칙 적용:** 저장소 최상위(MP3 제출 ZIP에서는 ZIP 최상위)의 `firestore.rules`를 Firestore → 규칙 탭에 붙여 넣고 게시합니다. 규칙을 적용하지 않으면 프로덕션 모드의 기본 거부 때문에 할 일을 읽고 쓸 수 없습니다. 본인 계정(`users/{uid}`)의 할 일만 읽고 쓸 수 있고, 다른 경로는 모두 거부됩니다. Firebase CLI를 쓰면 같은 폴더(`firebase.json`이 있는 곳)에서 아래처럼 적용할 수도 있습니다.
    ```bash
    firebase deploy --only firestore:rules --project <프로젝트 ID>
    ```
@@ -259,11 +259,11 @@ flutter test
 
 ## 확인 방법
 <!-- submission:repo-only -->
-MP별 평가 기준을 `###` 소제목으로 적었습니다. 스크린샷 파일은 저장소에서는 `screenshots/mp1/`처럼 MP별 폴더에 있고, MP별 제출 ZIP에서는 그 MP의 사진만 `screenshots/` 바로 아래에 들어갑니다. ZIP의 README에는 그 MP의 확인 방법만 남깁니다(`tool/make_submission.py`).
+MP별 평가 기준을 `###` 소제목으로 적었습니다. 소제목은 ANT 결과 화면의 '기능 평가' 항목 이름을 그대로 쓰고, 그 밖의 통과 기준은 기준 문장을 줄여 적었습니다. 스크린샷 파일은 저장소에서는 `screenshots/mp1/`처럼 MP별 폴더에 있고, MP별 제출 ZIP에서는 그 MP의 사진만 `screenshots/` 바로 아래에 들어갑니다. ZIP의 README에는 그 MP의 확인 방법만 남깁니다(`tool/make_submission.py`).
 <!-- /submission:repo-only -->
 
 <!-- submission:mp1 -->
-### 항목 추가·완료 토글
+### 목록·추가·완료
 - 조작: [서버 없이 실행](#서버-없이-실행)으로 앱을 열고 [할 일 추가]에서 제목을 입력해 [추가]를 누른 뒤, 목록 카드의 체크박스를 누른다
 - 기대 결과: 새 할 일이 목록에 나타나고 남은 개수가 늘어난다. 체크하면 취소선이 그어지며 목록 아래로 내려가고 남은 개수가 줄어든다
 - 스크린샷: 02_add_form.png, 03_list.png, 04_completed.png
@@ -272,6 +272,15 @@ MP별 평가 기준을 `###` 소제목으로 적었습니다. 스크린샷 파�
 - 조작: 처음 설치한 상태(또는 할 일을 모두 삭제한 상태)로 할 일 탭을 연다
 - 기대 결과: 목록 대신 '아직 등록한 할 일이 없어요' 안내와 [할 일 직접 추가], [사진에서 가져오기] 버튼이 보인다
 - 스크린샷: 01_empty.png
+
+### 상태 반영 구조
+- 조작: 목록 화면을 벗어나지 않은 채 할 일을 추가하고 체크박스를 누른다. 코드는 `app/lib/screens/home/todo_controller.dart`와 `app/lib/screens/todo_list/todo_list_screen.dart`를 본다
+- 기대 결과: 화면을 다시 열지 않아도 새 할 일, 취소선, 남은 개수가 바로 바뀐다. `TodoController`(`ChangeNotifier`)가 목록을 바꿀 때마다 `notifyListeners()`를 부르고, 목록 화면이 `AnimatedBuilder`로 이를 받아 다시 그린다
+- 스크린샷: 03_list.png, 04_completed.png
+
+### 프롬프트 기록
+- 조작: ZIP 최상위의 `prompts_log.md`에서 '준비', 'MP1 — 화면' 절을 읽는다
+- 기대 결과: 항목마다 프롬프트, AI 응답 요약, 판단(채택·수정·거절)과 그 이유가 있다
 
 ### README 실행 절차·기능 목록
 - 조작: README의 '실행 절차'와 '구현 기능 > MP1' 절을 읽는다
@@ -301,14 +310,18 @@ MP별 평가 기준을 `###` 소제목으로 적었습니다. 스크린샷 파�
 - 기대 결과: 바뀐 제목이 목록에 보이고, 삭제한 할 일은 사라졌다가 [실행 취소]로 돌아온다. 필터마다 해당 상태의 할 일만 보인다
 - 스크린샷: 01_edit_form.png, 02_edit_saved.png, 03_delete_confirm.png, 04_delete_undo.png, 05_filter_all.png, 06_filter_incomplete.png, 07_filter_completed.png
 
-### 재시작 후 데이터 유지
+### 재시작 후 유지
 - 조작: 할 일을 몇 개 등록하고 일부를 완료한 뒤, 앱 전환기에서 앱을 완전히 종료하고 다시 실행한다
 - 기대 결과: 종료 전과 같은 할 일과 완료 상태가 보인다
 - 스크린샷: 08_restart_before.png, 09_restart_after.png
 
-### 저장 방식 선택 이유·대안 비교
+### 저장 방식 선택 이유
 - 조작: README의 '로컬 저장 방식 비교' 절을 읽는다
 - 기대 결과: SQLite를 shared_preferences·Hive·drift와 비교한 표와 선택 이유가 있다
+
+### 프롬프트 기록
+- 조작: ZIP 최상위의 `prompts_log.md`에서 'MP2 — 로컬 저장' 절을 읽는다
+- 기대 결과: 항목마다 프롬프트, AI 응답 요약, 판단(채택·수정·거절)과 그 이유가 있다
 
 ### 민감정보 없음
 - 조작: 제출 ZIP에서 `.env`, `google-services.json`, `GoogleService-Info.plist`, 키 문자열(`AIza`)을 찾는다
@@ -324,23 +337,27 @@ MP별 평가 기준을 `###` 소제목으로 적었습니다. 스크린샷 파�
 <!-- /submission:mp2 -->
 
 <!-- submission:mp3 -->
-### 기기 A 추가 → 기기 B 새로고침 후 표시
+### 두 기기 동기화
 - 조작: [두 기기에서 동기화 확인](#두-기기에서-동기화-확인)대로 두 기기에서 실행해 같은 시험 계정으로 로그인한다. 기기 A에서 할 일을 추가하고, 기기 B 목록을 아래로 당겨 새로고침한다. 수정·완료·삭제도 같은 방법으로 확인한다
 - 기대 결과: 기기 B에 같은 할 일이 보이고 두 기기 모두 `동기화 완료`로 표시된다. 기기 A의 수정·완료·삭제도 기기 B에 반영된다
 - 스크린샷: 01_deviceA_add.jpg, 02_deviceB_refresh.jpg, 07_deviceA_edit.jpg, 08_deviceB_edit_synced.jpg, 09_deviceA_complete.jpg, 10_deviceB_complete_synced.jpg, 11_deviceA_delete.jpg, 12_deviceB_delete_synced.jpg
 
-### 오프라인 작성 → 온라인 복귀 후 서버 반영
+### 오프라인 작성 후 반영
 - 조작: 기기 A를 비행기 모드로 바꾸고 할 일을 추가한다. 비행기 모드를 끈 뒤 Firebase 콘솔의 Firestore에서 `users/{uid}/todos`를 열고, 기기 B를 새로고침한다
 - 기대 결과: 오프라인 동안 기기 A에 오프라인 배너와 `동기화 대기 1`이 보인다. 복귀하면 `동기화 완료`로 바뀌고, 콘솔에 같은 제목의 문서가 생기며 기기 B에도 표시된다
 - 스크린샷: 03_deviceA_offline_add.jpg, 04_deviceA_back_online.jpg, 05_console_synced.jpg, 06_deviceB_after_online.jpg
 
-### 동기화 충돌 처리 방침
+### 충돌 처리 방침
 - 조작: README의 '충돌 처리 방침' 절을 읽는다
 - 기대 결과: 같은 할 일 동시 수정(최신 수정 우선), 삭제와 수정 충돌(삭제 우선), 오프라인 작성, 첫 로그인 이관의 처리가 표로 있다
 
-### 설정 키 분리·.env.example만 제출
+### 키 분리
 - 조작: ZIP 최상위의 `.env.example`을 열고, `app/lib`에서 키 문자열(`AIza`)을 찾는다
 - 기대 결과: `.env.example`에는 키 이름만 있고 값은 비어 있다. 코드는 실행할 때 넘긴 값을 `String.fromEnvironment`로 읽고(`app/lib/services/firebase_bootstrap.dart`), 키 문자열은 없다. `.env`, `google-services.json`, `GoogleService-Info.plist`는 ZIP에 없다
+
+### 프롬프트 기록
+- 조작: ZIP 최상위의 `prompts_log.md`에서 'MP3 준비', 'MP3 — 서버 동기화' 절을 읽는다
+- 기대 결과: 항목마다 프롬프트, AI 응답 요약, 판단(채택·수정·거절)과 그 이유가 있다
 
 ### 입력 데이터·스크린샷 개인정보 없음
 - 조작: 스크린샷 12장과 입력한 할 일 제목을 확인한다
@@ -357,20 +374,28 @@ MP별 평가 기준을 `###` 소제목으로 적었습니다. 스크린샷 파�
 <!-- /submission:mp3 -->
 
 <!-- submission:mp4 -->
-### 사진 → 항목 후보 → 선택 저장
+### 사진에서 항목 저장
 - 조작: 목록 헤더의 카메라 아이콘을 누르고 06에서 메모를 [촬영]하거나 [앨범]에서 고른다. 07에서 후보를 체크하거나 연필로 고친 뒤 [선택한 N개 할 일로 등록]을 누른다
 - 기대 결과: 07에 메모 줄마다 후보가 보이고, 체크한 후보만 메모 순서대로 목록 맨 위에 추가된다
 - 스크린샷: 04_camera.png, 05_review_airplane.png, 06_added_airplane.png, 08_review_handwriting_ios.png, 09_added_ios.png
 
-### 비행기 모드 인식
+### 비행기 모드 동작
 - 조작: 비행기 모드를 켜고 와이파이가 꺼진 것을 확인한 뒤 위 흐름을 반복한다
 - 기대 결과: 네트워크 없이도 07에 후보가 나오고 등록된다
 - 스크린샷: 05_review_airplane.png, 06_added_airplane.png, 07_review_handwriting_android.png
 
-### 원본 사진 미저장·권한 거부 안내
-- 조작: 카메라 권한을 거부한 상태로 카메라 아이콘을 누른다. 다시 묻지 않는 거부 상태에서 [설정에서 권한 켜기]를 누른다. 사진 미저장은 '원본 사진을 저장하지 않는 방법' 절과 `flutter test test/services/device_memo_scanner_test.dart`로 확인한다
-- 기대 결과: 09가 권한이 필요한 이유를 안내하고 앱 설정 화면으로 보낸다. 등록하거나 버린 뒤 앱 폴더에 사진이 남지 않고, 할 일에는 글자만 저장된다
+### 원본 사진 비저장
+- 조작: README의 '원본 사진을 저장하지 않는 방법' 절이 적은 코드(`app/lib/services/device_memo_scanner.dart`의 `moveToCaptureDirectory`·`clearLeftovers`, 07·08 화면의 `dispose`)를 보고, `app` 폴더에서 `flutter test test/services/device_memo_scanner_test.dart`를 실행한다
+- 기대 결과: 사진은 앱 임시 폴더 `memo_capture/`에만 있다가 07·08 화면이 닫힐 때 지워지고, 도중에 남은 파일은 다음에 06을 열 때 지워진다. 할 일에는 글자만 저장되고 테스트가 통과한다
+
+### 권한 거부 안내
+- 조작: 카메라 권한을 거부한 상태로 카메라 아이콘을 누른다. 다시 묻지 않는 거부 상태에서 [설정에서 권한 켜기]를 누른다
+- 기대 결과: 앱이 멈추지 않고 09가 권한이 필요한 이유를 안내한다. [설정에서 권한 켜기]는 앱 설정 화면을 열고, 권한이 없어도 직접 입력으로 등록할 수 있다고 안내한다
 - 스크린샷: 01_permission_guide.png, 02_permission_denied.png, 03_permission_open_settings.png
+
+### 프롬프트 기록
+- 조작: ZIP 최상위의 `prompts_log.md`에서 'MP4 — 온디바이스 AI로 종이 메모 가져오기' 절을 읽는다
+- 기대 결과: 항목마다 프롬프트, AI 응답 요약, 판단(채택·수정·거절)과 그 이유가 있다
 
 ### 처리 시간 측정값·민감정보 없음
 - 조작: README의 '처리 시간' 절을 읽고, 제출 ZIP에서 `.env`와 키 문자열(`AIza`)을 찾는다
