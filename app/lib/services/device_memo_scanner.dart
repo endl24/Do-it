@@ -70,7 +70,9 @@ class DeviceMemoScanner implements MemoScanner {
     );
     final camera = CameraController(
       back,
-      ResolutionPreset.high,
+      // high(720p)로 찍으면 메모 한 장에서 글자가 너무 작게 잡혀 손글씨를 거의 읽지 못한다.
+      // max는 기기에 따라 수천만 화소가 되어 메모리를 많이 쓰므로 2160p로 정한다.
+      ResolutionPreset.ultraHigh,
       enableAudio: false,
     );
     _camera = camera;
